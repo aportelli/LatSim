@@ -1,0 +1,23 @@
+# builds
+build/*
+sandbox/*
+
+# Apple stuffs
+*.xcodeproj
+.DS_Store
+
+# VIM
+*.swp
+
+# autotools
+autom4te.cache/*
+*.in
+*.in~
+config.h*
+configure
+.buildutils/*
+aclocal.m4
+
+# Eigen headers
+lib/Eigen/*
+lib/eigen_files.mk
