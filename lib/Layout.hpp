@@ -50,6 +50,14 @@ public:
     unsigned long getLocalSurface(const unsigned int d) const;
     unsigned long getVolume(void) const;
     unsigned long getLocalVolume(void) const;
+    // check
+    static void checkDir(const unsigned int d);
+    // get absolute direction
+    static unsigned int absDir(const unsigned int d);
+    // get opposite direction
+    static unsigned int oppDir(const unsigned int d);
+    // get neighbor coordinate in the grid
+    int neighborCoord(const unsigned int d);
 private:
     int                          rank_;
     unsigned long                volume_, locVolume_;
@@ -184,19 +192,25 @@ Layout<D>::~Layout(void)
 template <unsigned long D>
 unsigned int Layout<D>::getDim(const unsigned int d) const
 {
-    return dim_[d];
+    checkDir(d);
+
+    return dim_[absDir(d)];
 }
 
 template <unsigned long D>
 unsigned int Layout<D>::getLocalDim(const unsigned int d) const
 {
-    return locDim_[d];
+    checkDir(d);
+
+    return locDim_[absDir(d)];
 }
 
 template <unsigned long D>
 unsigned long Layout<D>::getLocalSurface(const unsigned int d) const
 {
-    return locSurface_[d];
+    checkDir(d);
+
+    return locSurface_[absDir(d)];
 }
 
 template <unsigned long D>
@@ -209,6 +223,41 @@ template <unsigned long D>
 unsigned long Layout<D>::getLocalVolume(void) const
 {
     return locVolume_;
+}
+
+// check ///////////////////////////////////////////////////////////////////////
+template <unsigned long D>
+void Layout<D>::checkDir(const unsigned int d)
+{
+    if (d >= 2*D)
+    {
+        locGlobalError("direction " + strFrom(d) + " invalid " +
+                       "(number of dimension is " + strFrom(D) + ")");
+    }
+}
+
+// get absolute direction //////////////////////////////////////////////////////
+template <unsigned long D>
+unsigned int Layout<D>::absDir(const unsigned int d)
+{
+    return d % D;
+}
+
+// get opposite direction //////////////////////////////////////////////////////
+template <unsigned long D>
+unsigned int Layout<D>::oppDir(const unsigned int d)
+{
+    return (d + D) % (2*D);
+}
+
+// get neighbor coordinate in the grid /////////////////////////////////////////
+template <unsigned long D>
+int Layout<D>::neighborCoord(const unsigned int d)
+{
+    checkDir(d);
+
+    return (d < D) ? ((coord_[d] + 1)         % p_[d])
+                   : ((coord_[d] - 1 + p_[d]) % p_[d]);
 }
 
 END_NAMESPACE
