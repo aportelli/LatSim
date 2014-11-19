@@ -40,16 +40,23 @@ template <unsigned long D>
 class Layout: public LayoutObject, public Logger
 {
 public:
+    struct PlaneCommInfo
+    {
+        unsigned long nBlocks, blockSize, stride;
+    };
+public:
     // constructor
     Layout(const Coord<D> &l, const Coord<D> &p);
     // destructor
     virtual ~Layout(void);
     // access
-    unsigned int  getDim(const unsigned int d) const;
-    unsigned int  getLocalDim(const unsigned int d) const;
-    unsigned long getLocalSurface(const unsigned int d) const;
-    unsigned long getVolume(void) const;
-    unsigned long getLocalVolume(void) const;
+    unsigned int     getDim(const unsigned int d) const;
+    unsigned int     getLocalDim(const unsigned int d) const;
+    unsigned long    getLocalSurface(const unsigned int d) const;
+    unsigned long    getVolume(void) const;
+    unsigned long    getLocalVolume(void) const;
+    const MPI_Comm & getCommGrid(void) const;
+    const MPI_Comm & getDirCommGrid(const unsigned int d) const;
     // check
     static void checkDir(const unsigned int d);
     // get absolute direction
@@ -65,7 +72,8 @@ private:
     std::array<int, D>           p_, coord_;
     Coord<D>                     dim_, locDim_;
     MPI_Comm                     commGrid_;
-    std::array<MPI_Comm, D>      commDirGrid_;
+    std::array<MPI_Comm, D>      dirCommGrid_;
+    std::array<PlaneCommInfo, D> planeInfo_;
 };
 
 // global layout
@@ -140,13 +148,16 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     locVolume_ = 1;
     for (unsigned int d = 0; d < D; ++d)
     {
-        locDim_[d]      = dim_[d]/p_[d];
+        locDim_[d] = dim_[d]/p_[d];
+    }
+    for (unsigned int d = 0; d < D; ++d)
+    {
         volume_        *= dim_[d];
         locVolume_     *= locDim_[d];
         locSurface_[d]  = 1;
         for (unsigned int i = 0; i < D; ++i)
         {
-            locSurface_[d] *= (i != d) ? locDim_[d] : 1;
+            locSurface_[d] *= (i != d) ? locDim_[i] : 1;
         }
     }
     masterLog("volume         : " + strFrom(volume_));
@@ -171,10 +182,33 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
         {
             isActive[i] = (i == d) ? 1 : 0;
         }
-        MPI_Cart_sub(commGrid_, isActive, &commDirGrid_[d]);
+        MPI_Cart_sub(commGrid_, isActive, &dirCommGrid_[d]);
     }
     MPI_Comm_rank(commGrid_, &rank_);
     MPI_Cart_coords(commGrid_, rank_, D, coord_.data());
+
+    // compute plane communication informations
+    planeInfo_[0].nBlocks   = 1;
+    planeInfo_[0].blockSize = 1;
+    planeInfo_[0].stride    = 1;
+    for (unsigned int d = 1; d < D; ++d)
+    {
+        planeInfo_[0].blockSize *= dim_[d];
+    }
+    for (unsigned int d = 1; d < D; ++d)
+    {
+        planeInfo_[d].nBlocks   = planeInfo_[d-1].nBlocks*dim_[d-1];
+        planeInfo_[d].blockSize = planeInfo_[d-1].blockSize/dim_[d];
+        planeInfo_[d].stride    = planeInfo_[d-1].blockSize;
+    }
+    masterLog("plane indexing :");
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        masterLog("  d= " + strFrom(d) + ": nBlocks= " +
+                  strFrom(planeInfo_[d].nBlocks) + ", size= " +
+                  strFrom(planeInfo_[d].blockSize) + ", stride= " +
+                  strFrom(planeInfo_[d].stride));
+    }
 
     // everything is ok
     masterLog("communication grid ready");
@@ -223,6 +257,18 @@ template <unsigned long D>
 unsigned long Layout<D>::getLocalVolume(void) const
 {
     return locVolume_;
+}
+
+template <unsigned long D>
+const MPI_Comm & Layout<D>::getCommGrid(void) const
+{
+    return commGrid_;
+}
+
+template <unsigned long D>
+const MPI_Comm & Layout<D>::getDirCommGrid(const unsigned int d) const
+{
+    return dirCommGrid_[d];
 }
 
 // check ///////////////////////////////////////////////////////////////////////
