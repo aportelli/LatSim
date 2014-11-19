@@ -83,17 +83,31 @@ using MatExpr = Eigen::MatrixBase<Derived>;
 template <typename T, int nRow = dynamic, int nCol = dynamic>
 using Mat = Eigen::Matrix<T, nRow, nCol>;
 
-typedef Mat<int>                  IMat;
-typedef Mat<double>               DMat;
-typedef Mat<std::complex<double>> CMat;
+template <int nRow, int nCol>
+using SDMat = Eigen::Matrix<double, nRow, nCol>;
+
+template <int nRow, int nCol>
+using SCMat = Eigen::Matrix<std::complex<double>, nRow, nCol>;
+
+typedef SDMat<dynamic, dynamic> DMat;
+typedef SCMat<dynamic, dynamic> CMat;
 
 // vector types
-template <typename T>
-using Vec = Mat<T, dynamic, 1>;
+template <typename T, int size = dynamic>
+using Vec = Mat<T, size, 1>;
 
-typedef Vec<int>                  IVec;
-typedef Vec<double>               DVec;
-typedef Vec<std::complex<double>> CVec;
+template <int size>
+using SIVec = Vec<int, size>;
+
+template <int size>
+using SDVec = Vec<double, size>;
+
+template <int size>
+using SCVec = Vec<std::complex<double>, size>;
+
+typedef SIVec<dynamic> IVec;
+typedef SDVec<dynamic> DVec;
+typedef SCVec<dynamic> CVec;
 
 #define FOR_VEC(vec, i)  for (LatSim::Index i = 0; i < (vec).size(); ++i)
 #define FOR_ARRAY(ar, i) FOR_VEC(ar, i)
