@@ -30,7 +30,8 @@ libLatSim_la_HEADERS = \
     Global.hpp         \
     Lattice.hpp        \
     Layout.hpp         \
-    Logger.hpp
+    Logger.hpp         \
+    MpiTypes.hpp    
 
 libLatSim_la_CFLAGS   = $(COM_CFLAGS)
 libLatSim_la_CXXFLAGS = $(COM_CXXFLAGS)

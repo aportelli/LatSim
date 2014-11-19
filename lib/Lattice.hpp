@@ -22,6 +22,7 @@
 
 #include <LatSim/Global.hpp>
 #include <LatSim/Layout.hpp>
+#include <LatSim/MpiTypes.hpp>
 
 BEGIN_NAMESPACE
 
@@ -36,11 +37,14 @@ public:
     // constructor
     explicit Lattice(const LayoutObject *layout = globalLayout);
     // destructor
-    virtual ~Lattice(void) = default;
+    virtual ~Lattice(void);
 private:
     const Layout<D>                   *layout_;
     std::unique_ptr<T>                data_;
     std::array<std::unique_ptr<T>, D> commBuffer_;
+    MPI_Datatype                      mpiType_;
+    MPI_Request                       sReq_, rReq_;
+    MPI_Status                        sStatus_, rStatus_;
 };
 
 /******************************************************************************
@@ -49,12 +53,23 @@ private:
 template <typename T, unsigned long D>
 Lattice<T, D>::Lattice(const LayoutObject *layout)
 {
+    // allocate lattice and communication buffers
     layout_ = dynamic_cast<const Layout<D> *>(layout);
     data_.reset(new T[layout_->getLocalVolume()]);
     for (unsigned int d = 0; d < D; ++d)
     {
         commBuffer_[d].reset(new T[layout_->getLocalSurface(d)]);
     }
+
+    // create base MPI data type
+    MpiType<T>::make(mpiType_);
+    MPI_Type_commit(&mpiType_);
+}
+
+template <typename T, unsigned long D>
+Lattice<T, D>::~Lattice(void)
+{
+    MPI_Type_free(&mpiType_);
 }
 
 END_NAMESPACE
