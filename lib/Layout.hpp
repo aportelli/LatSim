@@ -40,7 +40,7 @@ template <unsigned long D>
 class Layout: public LayoutObject, public Logger
 {
 public:
-    struct PlaneCommInfo
+    struct PlaneInfo
     {
         unsigned long nBlocks, blockSize, stride;
     };
@@ -50,13 +50,16 @@ public:
     // destructor
     virtual ~Layout(void);
     // access
-    unsigned int     getDim(const unsigned int d) const;
-    unsigned int     getLocalDim(const unsigned int d) const;
-    unsigned long    getLocalSurface(const unsigned int d) const;
-    unsigned long    getVolume(void) const;
-    unsigned long    getLocalVolume(void) const;
-    const MPI_Comm & getCommGrid(void) const;
-    const MPI_Comm & getDirCommGrid(const unsigned int d) const;
+    unsigned int      getRank(void) const;
+    unsigned int      getDim(const unsigned int d) const;
+    unsigned int      getLocalDim(const unsigned int d) const;
+    unsigned long     getLocalSurface(const unsigned int d) const;
+    unsigned long     getVolume(void) const;
+    unsigned long     getLocalVolume(void) const;
+    unsigned long     getCommBufferSize(void) const;
+    const PlaneInfo & getPlaneInfo(const unsigned int d) const;
+    const MPI_Comm &  getCommGrid(void) const;
+    const MPI_Comm &  getDirCommGrid(const unsigned int d) const;
     // check
     static void checkDir(const unsigned int d);
     // get absolute direction
@@ -64,16 +67,19 @@ public:
     // get opposite direction
     static unsigned int oppDir(const unsigned int d);
     // get neighbor coordinate in the grid
-    int neighborCoord(const unsigned int d);
+    int neighborCoord(const unsigned int d) const;
+    // need communication in direction d?
+    bool needComm(const unsigned d) const;
 private:
     int                          rank_;
-    unsigned long                volume_, locVolume_;
+    unsigned long                volume_, locVolume_, commBufferSize_;
     std::array<unsigned long, D> locSurface_;
     std::array<int, D>           p_, coord_;
+    std::array<bool, D>          needComm_;
     Coord<D>                     dim_, locDim_;
     MPI_Comm                     commGrid_;
     std::array<MPI_Comm, D>      dirCommGrid_;
-    std::array<PlaneCommInfo, D> planeInfo_;
+    std::array<PlaneInfo, D>     planeInfo_;
 };
 
 // global layout
@@ -109,20 +115,25 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     // dimension check
     for (unsigned int d = 0; d < D; ++d)
     {
-        p_[d]   = static_cast<int>(p[d]);
+        if (p[d] == 0)
+        {
+            locGlobalError("no processes in direction " + strFrom(d));
+        }
+        p_[d]        = static_cast<int>(p[d]);
+        needComm_[d] = (p_[d] != 1);
     }
     buf = "";
     for (unsigned int d = 0; d < D; ++d)
     {
         buf += strFrom(dim_[d]) + ((d != D - 1) ? "x" : "");
     }
-    masterLog("lattice size   : " + buf);
+    masterLog("lattice size     : " + buf);
     buf = "";
     for (unsigned int d = 0; d < D; ++d)
     {
         buf += strFrom(p_[d]) + ((d != D - 1) ? "x" : "");
     }
-    masterLog("MPI partition  : " + buf);
+    masterLog("MPI partition    : " + buf);
     for (unsigned int d = 0; d < D; ++d)
     {
         if (dim_[d] % p_[d] != 0)
@@ -144,8 +155,9 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     }
 
     // compute volumes and surfaces
-    volume_    = 1;
-    locVolume_ = 1;
+    volume_         = 1;
+    locVolume_      = 1;
+    commBufferSize_ = 0;
     for (unsigned int d = 0; d < D; ++d)
     {
         locDim_[d] = dim_[d]/p_[d];
@@ -159,16 +171,20 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
         {
             locSurface_[d] *= (i != d) ? locDim_[i] : 1;
         }
+        commBufferSize_ += 2*locSurface_[d];
     }
-    masterLog("volume         : " + strFrom(volume_));
-    masterLog("local volume   : " + strFrom(locVolume_));
+    masterLog("volume           : " + strFrom(volume_));
+    masterLog("local volume     : " + strFrom(locVolume_));
     buf = "";
     for (unsigned int d = 0; d < D; ++d)
     {
-        buf += strFrom(locSurface_[d]) + " (d= " + strFrom(d) + ")";
-        buf += (d == D - 1) ? "" : ", ";
+        buf += (d == 0) ? "[" : "";
+        buf += strFrom(locSurface_[d]);
+        buf += (d == D - 1) ? "]" : ", ";
     }
-    masterLog("local surfaces : " + buf);
+    masterLog("local surfaces   : " + buf);
+    masterLog("comm buffer size : " + strFrom(commBufferSize_));
+    masterLog("total local size : " + strFrom(locVolume_ + commBufferSize_));
 
     // create Cartesian topology
     for (unsigned int d = 0; d < D; ++d)
@@ -193,18 +209,18 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     planeInfo_[0].stride    = 1;
     for (unsigned int d = 1; d < D; ++d)
     {
-        planeInfo_[0].blockSize *= dim_[d];
+        planeInfo_[0].blockSize *= locDim_[d];
     }
     for (unsigned int d = 1; d < D; ++d)
     {
-        planeInfo_[d].nBlocks   = planeInfo_[d-1].nBlocks*dim_[d-1];
-        planeInfo_[d].blockSize = planeInfo_[d-1].blockSize/dim_[d];
+        planeInfo_[d].nBlocks   = planeInfo_[d-1].nBlocks*locDim_[d-1];
+        planeInfo_[d].blockSize = planeInfo_[d-1].blockSize/locDim_[d];
         planeInfo_[d].stride    = planeInfo_[d-1].blockSize;
     }
-    masterLog("plane indexing :");
+    masterLog("plane indexing   :");
     for (unsigned int d = 0; d < D; ++d)
     {
-        masterLog("  d= " + strFrom(d) + ": nBlocks= " +
+        masterLog("  dir= " + strFrom(d) + ": nBlocks= " +
                   strFrom(planeInfo_[d].nBlocks) + ", size= " +
                   strFrom(planeInfo_[d].blockSize) + ", stride= " +
                   strFrom(planeInfo_[d].stride));
@@ -218,11 +234,18 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
 template <unsigned long D>
 Layout<D>::~Layout(void)
 {
-    MPI_Finalize();
+    MPI_Barrier(MPI_COMM_WORLD);
     masterLog("communication grid terminated");
+    MPI_Finalize();
 }
 
 // access //////////////////////////////////////////////////////////////////////
+template <unsigned long D>
+unsigned int Layout<D>::getRank(void) const
+{
+    return rank_;
+}
+
 template <unsigned long D>
 unsigned int Layout<D>::getDim(const unsigned int d) const
 {
@@ -260,6 +283,21 @@ unsigned long Layout<D>::getLocalVolume(void) const
 }
 
 template <unsigned long D>
+unsigned long Layout<D>::getCommBufferSize(void) const
+{
+    return commBufferSize_;
+}
+
+template <unsigned long D>
+const typename Layout<D>::PlaneInfo &
+Layout<D>::getPlaneInfo(const unsigned int d) const
+{
+    checkDir(d);
+
+    return planeInfo_[absDir(d)];
+}
+
+template <unsigned long D>
 const MPI_Comm & Layout<D>::getCommGrid(void) const
 {
     return commGrid_;
@@ -268,7 +306,9 @@ const MPI_Comm & Layout<D>::getCommGrid(void) const
 template <unsigned long D>
 const MPI_Comm & Layout<D>::getDirCommGrid(const unsigned int d) const
 {
-    return dirCommGrid_[d];
+    checkDir(d);
+
+    return dirCommGrid_[absDir(d)];
 }
 
 // check ///////////////////////////////////////////////////////////////////////
@@ -298,12 +338,21 @@ unsigned int Layout<D>::oppDir(const unsigned int d)
 
 // get neighbor coordinate in the grid /////////////////////////////////////////
 template <unsigned long D>
-int Layout<D>::neighborCoord(const unsigned int d)
+int Layout<D>::neighborCoord(const unsigned int d) const
 {
-    checkDir(d);
+    int ad = absDir(d);
 
-    return (d < D) ? ((coord_[d] + 1)         % p_[d])
-                   : ((coord_[d] - 1 + p_[d]) % p_[d]);
+    checkDir(d);
+    
+    return (d < D) ? ((coord_[ad] + 1)          % p_[ad])
+                   : ((coord_[ad] + p_[ad] - 1) % p_[ad]);
+}
+
+// need communication in direction d? //////////////////////////////////////////
+template <unsigned long D>
+bool Layout<D>::needComm(const unsigned d) const
+{
+    return needComm_[absDir(d)];
 }
 
 END_NAMESPACE

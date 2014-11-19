@@ -13,5 +13,7 @@ int main(void)
 
     Lattice<double, 4> phi;
 
+    phi.gather(4);
+    
     return EXIT_SUCCESS;
 }

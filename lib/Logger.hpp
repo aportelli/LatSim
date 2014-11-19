@@ -38,16 +38,15 @@ public:
     // destructor
     virtual ~Logger(void) = default;
     // IO
-    void masterLog(const std::string &msg);
-    void masterLog(const std::string &&msg);
-    void nodeLog(const std::string &msg);
-    void nodeLog(const std::string &&msg);
+    void masterLog(const std::string &msg) const;
+    void masterLog(const std::string &&msg) const;
+    void nodeLog(const std::string &msg) const;
+    void nodeLog(const std::string &&msg) const;
 private:
     // check
-    void checkMpi(void);
+    void checkMpi(void) const;
 private:
     std::string name_;
-    int         rank_{-1}, size_{-1};
 };
 
 END_NAMESPACE

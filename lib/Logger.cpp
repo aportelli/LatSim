@@ -32,42 +32,49 @@ Logger::Logger(const std::string name)
 {}
 
 // IO //////////////////////////////////////////////////////////////////////////
-void Logger::masterLog(const std::string &msg)
+void Logger::masterLog(const std::string &msg) const
 {
+    int rank;
+
     checkMpi();
-    if (rank_ == 0)
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0)
     {
         cout << left << setw(width) << "[" + name_ + "]" << ": " << msg << endl;
     }
 }
 
-void Logger::masterLog(const std::string &&msg)
+void Logger::masterLog(const std::string &&msg) const
 {
     masterLog(msg);
 }
 
-void Logger::nodeLog(const std::string &msg)
+void Logger::nodeLog(const std::string &msg) const
 {
+    int rank, size;
+
     checkMpi();
-    for (int r = 0; r < size_; ++r)
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    for (int r = 0; r < size; ++r)
     {
-        if (r == rank_)
+        if (r == rank)
         {
             cout << left << setw(width);
-            cout << "{" + name_ + "(" + strFrom(rank_) + ")}" << ": ";
+            cout << "{" + name_ + "(" + strFrom(rank) + ")}" << ": ";
             cout << msg << endl;
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
 }
 
-void Logger::nodeLog(const std::string &&msg)
+void Logger::nodeLog(const std::string &&msg) const
 {
     nodeLog(msg);
 }
 
 // check ///////////////////////////////////////////////////////////////////////
-void Logger::checkMpi(void)
+void Logger::checkMpi(void) const
 {
     int isInit;
 
@@ -77,10 +84,5 @@ void Logger::checkMpi(void)
         MPI_Barrier(MPI_COMM_WORLD);
         locGlobalError("communications not initialized, please declare"
                        " a Layout object");
-    }
-    else if ((rank_ < 0)||(size_ < 0))
-    {
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
-        MPI_Comm_size(MPI_COMM_WORLD, &size_);
     }
 }
