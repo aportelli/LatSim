@@ -307,10 +307,12 @@ public:
     ProgressBar(const A current, const B total, const Index nCol = 60);
     // IO
     friend std::ostream & operator<<(std::ostream &out,
-                                     const ProgressBar &&bar);
+                                             const ProgressBar &&bar);
 private:
     Index current_, total_, nCol_;
 };
+
+std::ostream & operator<<(std::ostream &out, const ProgressBar &&bar);
 
 template <typename A, typename B>
 ProgressBar::ProgressBar(const A current, const B total, const Index nCol)

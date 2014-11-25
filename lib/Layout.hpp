@@ -70,6 +70,8 @@ public:
     int neighborCoord(const unsigned int d) const;
     // need communication in direction d?
     bool needComm(const unsigned d) const;
+    // clock
+    static double time(void);
 private:
     int                          rank_;
     unsigned long                volume_, locVolume_, commBufferSize_;
@@ -353,6 +355,13 @@ template <unsigned long D>
 bool Layout<D>::needComm(const unsigned d) const
 {
     return needComm_[absDir(d)];
+}
+
+// clock ///////////////////////////////////////////////////////////////////////
+template <unsigned long D>
+double Layout<D>::time(void)
+{
+    return MPI_Wtime();
 }
 
 END_NAMESPACE
