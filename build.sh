@@ -6,9 +6,9 @@ PREFIX=`cat Makefile | grep '^prefix =' | awk '{print $3}'`
 case $1 in
     '')
         echo '-- building...'
+        make uninstall 1>/dev/null
         make -j8
         echo '-- installing...'
-        make uninstall 1>/dev/null
         make install 1>/dev/null;;
 #        if [[ `basename \`pwd\`` == "lib" ]]
 #        then
