@@ -5,6 +5,19 @@
 using namespace std;
 using namespace LatSim;
 
+const unsigned int sleepTime = 1;
+
+class TestFunc
+{
+public:
+    template <typename T>
+    inline void operator()(T &out, const T &x, const T &y, const T &z)
+    {
+        out = x*(z*(y-x)+y*z*z*(x-y)+z+x);
+    }
+    static constexpr double nOp = 10.;
+};
+
 int main(int argc, char *argv[])
 {
     // Argument parsing
@@ -33,64 +46,83 @@ int main(int argc, char *argv[])
     registerGlobalLayout(layout);
 
     // LatSim implementation
-    double             time, nOp;
-    Lattice<double, 4> f1,f2,f3,f4;
+    double            time, nOp;
+    Lattice<float, 4> x, y, z;
+    TestFunc          func;
 
-    nOp  = 0.;
     for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
     {
-        f1[i] = 2*static_cast<double>(argc)+i;
-        f2[i] = 3*static_cast<double>(argc)+i;
-        f3[i] = 1*static_cast<double>(argc)+i;
-        f4[i] = sin(i);
+        x[i] = 2*static_cast<float>(argc)+i;
+        y[i] = 3*static_cast<float>(argc)+i;
+        z[i] = sin(static_cast<float>(i)*argc);
     }
-    sleep(1);
+    sleep(sleepTime);
     time = layout.time();
     for (int j = 0; j < n; ++j)
     {
-        f2   = f1+(f2-f3)*f4*f4*f4+f1-f3;
-        nOp += 7.*static_cast<double>(layout.getVolume());
+        func(z, x, y, z);
     }
     time = layout.time() - time;
-    sleep(1);
+    sleep(sleepTime);
+    nOp = n*TestFunc::nOp*static_cast<float>(layout.getVolume());
     if (layout.getRank() == 0)
     {
         cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
-//        for (unsigned long i = 0; i < layout.getLocalVolume()/4; ++i)
-//        {
-//            cout << "f2[" << i << "]= " << f2[i] << endl;
-//        }
     }
 
-    // naive implementation
-    nOp  = 0.;
+    // naive implementation with lattices
     for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
     {
-        f1[i] = 2*static_cast<double>(argc)+i;
-        f2[i] = 3*static_cast<double>(argc)+i;
-        f3[i] = 1*static_cast<double>(argc)+i;
-        f4[i] = sin(i);
+        x[i] = 2*static_cast<float>(argc)+i;
+        y[i] = 3*static_cast<float>(argc)+i;
+        z[i] = sin(static_cast<float>(i)*argc);
     }
-    sleep(1);
+    sleep(sleepTime);
     time = layout.time();
     for (int j = 0; j < n; ++j)
     {
         for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
         {
-            f2[i] = f1[i]+(f2[i]-f3[i])*f4[i]*f4[i]*f4[i]+f1[i]-f3[i];
+            func(z[i], x[i], y[i], z[i]);
         }
-        nOp += 7.*static_cast<double>(layout.getVolume());
     }
     time = layout.time() - time;
-    sleep(1);
+    sleep(sleepTime);
     if (layout.getRank() == 0)
     {
         cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
-//        for (unsigned long i = 0; i < layout.getLocalVolume()/4; ++i)
-//        {
-//            cout << "f2[" << i << "]= " << f2[i] << endl;
-//        }
     }
+
+    // naive implementation with arrays
+    float *a = new float[layout.getLocalVolume()];
+    float *b = new float[layout.getLocalVolume()];
+    float *c = new float[layout.getLocalVolume()];
+
+    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    {
+        a[i] = 2*static_cast<float>(argc)+i;
+        b[i] = 3*static_cast<float>(argc)+i;
+        c[i] = sin(static_cast<float>(i)*argc);
+    }
+    sleep(sleepTime);
+    time = layout.time();
+    for (int j = 0; j < n; ++j)
+    {
+        for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+        {
+            func(c[i], a[i], b[i], c[i]);
+        }
+    }
+    time = layout.time() - time;
+    sleep(sleepTime);
+    if (layout.getRank() == 0)
+    {
+        cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
+    }
+
+    delete [] a;
+    delete [] b;
+    delete [] c;
 
     return EXIT_SUCCESS;
 }

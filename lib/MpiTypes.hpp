@@ -38,6 +38,17 @@ public:
     }
 };
 
+// float
+template <>
+class MpiType<float>
+{
+public:
+    static void make(MPI_Datatype &type)
+    {
+        MPI_Type_contiguous(1, MPI_FLOAT, &type);
+    }
+};
+
 // double
 template <>
 class MpiType<double>

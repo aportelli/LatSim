@@ -29,106 +29,38 @@
 BEGIN_NAMESPACE
 BEGIN_EXPR_NAMESPACE
 
-// compile time stack machine, strongly inspired by:
-// http://stackoverflow.com/questions/11809052/expression-templates-and-c11
+template<int... is>
+class ISeq {};
 
-/******************************************************************************
- *                            site tuple factory                              *
- ******************************************************************************/
-// site extractor class ////////////////////////////////////////////////////////
-template <typename SiteTuple, typename LatTuple, int j, bool end>
-class Site
+template<int N, int... is>
+class SeqGen: public SeqGen<N-1, N-1, is...> {};
+
+template<int... is>
+class SeqGen<1, is...>
 {
 public:
-    template <typename... Ts>
-    static SiteTuple site(int i, const LatTuple& t, Ts && ... args);
+    static ISeq<is...> seq(void) {return ISeq<is...>();};
 };
 
-template <typename SiteTuple, typename LatTuple, int j, bool end>
-template <typename... Ts>
-SiteTuple
-Site<SiteTuple, LatTuple, j, end>::site(int i, const LatTuple& t,
-                                        Ts && ... args)
+template <typename T>
+auto inline eval(const unsigned long i, const T &arg)->decltype(arg[i])
 {
-    return Site<SiteTuple, LatTuple,  j+1,
-    std::tuple_size<LatTuple>::value == j+1>::
-    site(i, t , std::forward<Ts>(args)..., std::get<j>(t)[i]);
+    return arg[i];
 }
 
-// partial specialization for the last element /////////////////////////////////
-template <typename SiteTuple, typename LatTuple, int j>
-class Site<SiteTuple, LatTuple, j, true>
+template <typename Op, typename... Ts, int... is>
+auto inline eval(const unsigned long i, const std::tuple<Op, Ts...> &expr,
+                 const ISeq<is...> &seq __unused)
+->decltype(std::get<0>(expr).eval(eval(i, std::get<is>(expr))...))
 {
-public:
-    template <typename ... Ts>
-    static SiteTuple site(int i, LatTuple const& t, Ts && ... args);
-};
-
-template <typename SiteTuple, typename LatTuple, int N>
-template <typename... Ts>
-SiteTuple
-Site<SiteTuple, LatTuple, N, true>::site(int i __unused,
-                                         const LatTuple& t __unused,
-                                         Ts && ... args)
-{
-    return SiteTuple(std::forward<Ts>(args)...);
+    return std::get<0>(expr).eval(eval(i, std::get<is>(expr))...);
 }
 
-// function to build a site tuple from a lattice tuple /////////////////////////
-template <typename... Lats>
-std::tuple<typename std::remove_reference<Lats>::type::SiteType...>
-getSites(int i , const std::tuple<Lats...>& latTuple)
+template <typename Op, typename... Ts>
+auto inline eval(const unsigned long i, const std::tuple<Op, Ts...> &expr)
+->decltype(eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq()))
 {
-    return Site<
-    std::tuple<typename std::remove_reference<Lats>::type::SiteType...>,
-        std::tuple<Lats...>, 0,
-        std::tuple_size<std::tuple<Lats...>>::value == 0>::site(i, latTuple);
-}
-
-/******************************************************************************
- *                          template stack machine                            *
- ******************************************************************************/
-// evaluation of one step in the stack
-template <int OpPos, int ArgPos, bool end>
-class StackMachine
-{
-public:
-    template <typename... Ts, typename... Ops>
-    static void eval(std::tuple<Ts...> &args, const std::tuple<Ops...> &ops);
-};
-
-template <int OpPos, int ArgPos, bool end>
-template <typename... Ts, typename... Ops>
-void StackMachine<OpPos, ArgPos, end>::eval(std::tuple<Ts...> &args,
-                                            const std::tuple<Ops...> &ops)
-{
-    auto           &currArg = std::get<ArgPos>(args);
-    auto           &nextArg = std::get<ArgPos + 1>(args);
-    auto           &currOp  = std::get<OpPos>(ops);
-    constexpr bool isLast   = (sizeof...(Ops) == OpPos + 1);
-
-    nextArg = currOp.eval(currArg, nextArg);
-    StackMachine<OpPos + 1, ArgPos + 1, isLast>::eval(args, ops);
-}
-
-// specialization for the stack's end
-template <int OpPos, int ArgPos>
-class StackMachine<OpPos, ArgPos, true>
-{
-public:
-    template <typename... Ts, typename... Ops>
-    static void eval(std::tuple<Ts...>& args __unused,
-                     const std::tuple<Ops...> & ops __unused)
-    {}
-};
-
-// global evaluation function
-template <typename T, typename... Ts, typename... Ops>
-T eval(const std::tuple<Ts...>& args, const std::tuple<Ops...> & ops)
-{
-    StackMachine<0, 0, false>::eval(const_cast<std::tuple<Ts...> &>(args), ops);
-
-    return std::get<sizeof...(Ops)>(args);
+    return eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq());
 }
 
 /******************************************************************************
@@ -138,69 +70,39 @@ template <typename LhsT, typename RhsT>
 class Add
 {
 public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs + rhs)
+    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs + rhs)
     {
         return lhs + rhs;
     }
 };
 
 template <typename LhsT, typename RhsT>
-class RSub
+class Sub
 {
 public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs - rhs)
+    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs - rhs)
     {
         return lhs - rhs;
     }
 };
 
 template <typename LhsT, typename RhsT>
-class LSub
+class Mul
 {
 public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs - rhs)
-    {
-        return rhs - lhs;
-    }
-};
-
-template <typename LhsT, typename RhsT>
-class RMul
-{
-public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs*rhs)
+    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs*rhs)
     {
         return lhs*rhs;
     }
 };
 
 template <typename LhsT, typename RhsT>
-class LMul
+class Div
 {
 public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs*rhs)
-    {
-        return rhs*lhs;
-    }
-};
-
-template <typename LhsT, typename RhsT>
-class RDiv
-{
-public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs/rhs)
+    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs/rhs)
     {
         return lhs/rhs;
-    }
-};
-
-template <typename LhsT, typename RhsT>
-class LDiv
-{
-public:
-    static auto eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs/rhs)
-    {
-        return rhs/lhs;
     }
 };
 

@@ -53,9 +53,16 @@ public:
     //// blocking
     void gather(const unsigned d);
     // assignement operator
-    template <typename... Ts, typename... Ops>
-    Lattice<T, D> & operator=(const std::pair<std::tuple<Ts...>,
-                                              std::tuple<Ops...>>& stack);
+    template <typename Op, typename... Ts>
+    Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr)
+    {
+        for (unsigned long i = 0; i < layout_->getLocalVolume(); ++i)
+        {
+            lattice_[i] = Expr::eval(i, expr);
+        }
+
+        return *this;
+    }
 private:
     // helpers for constructors
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -72,45 +79,22 @@ private:
 };
 
 // arithmetic operators
-#define DEFINE_OP(op, lname, rname)\
-template <typename T, unsigned long D>\
-std::pair<std::tuple<const Lattice<T, D> &, const Lattice<T, D> &>,\
-          std::tuple<Expr::rname<T, T>>>\
-op(const Lattice<T, D> &lhs, const Lattice<T, D> &rhs)\
+#define OP_NAME(name) Expr::name<decltype(Expr::eval(0lu, lhs)),\
+                                 decltype(Expr::eval(0lu, rhs))>
+
+#define DEFINE_OP(op, name)\
+template <typename LhsT, typename RhsT>\
+auto op(const LhsT &lhs, const RhsT &rhs)\
+->std::tuple<OP_NAME(name), const LhsT &, const RhsT &>\
 {\
-    return std::make_pair(\
-        std::tuple<const Lattice<T, D> &, const Lattice<T, D> &>(lhs, rhs),\
-        std::tuple<Expr::rname<T, T>>(Expr::rname<T, T>()));\
-}\
-\
-template <typename... Ts, typename... Ops, typename T, unsigned long D>\
-std::pair<std::tuple<Ts..., const Lattice<T, D> &>,\
-          std::tuple<Ops..., Expr::rname<T, T>>>\
-op(const std::pair<std::tuple<Ts...>, std::tuple<Ops...>> &lhs,\
-   const Lattice<T, D> &rhs)\
-{\
-    return std::make_pair(\
-        std::tuple_cat(lhs.first, std::tuple<const Lattice<T, D> &>(rhs)),\
-        std::tuple_cat(lhs.second,\
-                       std::tuple<Expr::rname<T, T>>(Expr::rname<T, T>())));\
-}\
-\
-template <typename... Ts, typename... Ops, typename T, unsigned long D>\
-std::pair<std::tuple<Ts..., const Lattice<T, D> &>,\
-          std::tuple<Ops..., Expr::lname<T, T>>>\
-op(const Lattice<T, D> &lhs,\
-   const std::pair<std::tuple<Ts...>, std::tuple<Ops...>> &rhs)\
-{\
-    return std::make_pair(\
-        std::tuple_cat(rhs.first, std::tuple<const Lattice<T, D> &>(lhs)),\
-        std::tuple_cat(rhs.second,\
-                       std::tuple<Expr::lname<T, T>>(Expr::lname<T, T>())));\
+    return std::tuple<OP_NAME(name), const LhsT &, const RhsT &>\
+                     (OP_NAME(name)(), lhs, rhs);\
 }
 
-DEFINE_OP(operator+, Add,  Add)
-DEFINE_OP(operator-, LSub, RSub)
-DEFINE_OP(operator*, LMul, RMul)
-DEFINE_OP(operator/, LDiv, RDiv)
+DEFINE_OP(operator+, Add);
+DEFINE_OP(operator-, Sub);
+DEFINE_OP(operator*, Mul);
+DEFINE_OP(operator/, Div);
 
 /******************************************************************************
  *                          Lattice implementation                            *
@@ -119,11 +103,19 @@ DEFINE_OP(operator/, LDiv, RDiv)
 template <typename T, unsigned long D>
 void Lattice<T, D>::reallocate(const LayoutObject *layout)
 {
+    // set layout
+    layout_  = dynamic_cast<const Layout<D> *>(layout);
+
     // allocate lattice and communication buffers
-    layout_ = dynamic_cast<const Layout<D> *>(layout);
-    data_.reset(new T[layout_->getLocalVolume()+layout_->getCommBufferSize()]);
-    lattice_       = data_.get();
-    commBuffer_[0] = data_.get() + layout_->getLocalVolume();
+    unsigned long size = layout_->getLocalVolume()+layout_->getCommBufferSize();
+    void          *start;
+
+    size += alignof(T);
+    data_.reset(new T[size]);
+    start = data_.get();
+    std::align(alignof(T), size*sizeof(T), start, size);
+    lattice_ = static_cast<T *>(start);
+    commBuffer_[0] = lattice_ + layout_->getLocalVolume();
     for (unsigned int d = 1; d < 2*D; ++d)
     {
         commBuffer_[d] = commBuffer_[d-1] + layout_->getLocalSurface(d);
@@ -190,24 +182,14 @@ Lattice<T, D>::~Lattice(void)
 
 // local site access
 template <typename T, unsigned long D>
-const T & Lattice<T, D>::operator[](const unsigned long i) const
+inline const T & Lattice<T, D>::operator[](const unsigned long i) const
 {
-    if (i >= layout_->getLocalVolume())
-    {
-        locGlobalError("site index out of range (i= " + strFrom(i) + ")");
-    }
-    
     return lattice_[i];
 }
 
 template <typename T, unsigned long D>
-T & Lattice<T, D>::operator[](const unsigned long i)
+inline T & Lattice<T, D>::operator[](const unsigned long i)
 {
-    if (i >= layout_->getLocalVolume())
-    {
-        locGlobalError("site index out of range (i= " + strFrom(i) + ")");
-    }
-    
     return lattice_[i];
 }
 
@@ -246,22 +228,6 @@ void Lattice<T, D>::gather(const unsigned int d)
 {
     gatherStart(d);
     gatherWait(d);
-}
-
-// assignement operator ////////////////////////////////////////////////////////
-template <typename T, unsigned long D>
-template <typename... Ts, typename... Ops>
-Lattice<T, D> &
-Lattice<T, D>::operator=(const std::pair<std::tuple<Ts...>,
-                                         std::tuple<Ops...>>& stack)
-{
-    for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
-    {
-        lattice_[i] = Expr::eval<T>(Expr::getSites(i, stack.first),
-                                    stack.second);
-    }
-    
-    return *this;
 }
 
 END_NAMESPACE
