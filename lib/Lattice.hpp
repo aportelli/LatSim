@@ -54,7 +54,7 @@ public:
     void gather(const unsigned d);
     // assignement operator
     template <typename Op, typename... Ts>
-    Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr)
+    Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr) flatten
     {
         for (unsigned long i = 0; i < layout_->getLocalVolume(); ++i)
         {
@@ -83,12 +83,40 @@ private:
                                  decltype(Expr::eval(0lu, rhs))>
 
 #define DEFINE_OP(op, name)\
-template <typename LhsT, typename RhsT>\
-auto op(const LhsT &lhs, const RhsT &rhs)\
-->std::tuple<OP_NAME(name), const LhsT &, const RhsT &>\
+template <typename T1, typename T2, unsigned long D>\
+strong_inline auto op(const Lattice<T1, D> &lhs, const Lattice<T2, D> &rhs)\
+->std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
+             const Lattice<T2, D> &>\
 {\
-    return std::tuple<OP_NAME(name), const LhsT &, const RhsT &>\
-                     (OP_NAME(name)(), lhs, rhs);\
+    return std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
+        const Lattice<T2, D> &>(OP_NAME(name)(), lhs, rhs);\
+}\
+template <typename Op1, typename... T1s, typename T2, unsigned long D>\
+strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
+                     const Lattice<T2, D> &rhs)\
+->std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
+             const Lattice<T2, D> &>\
+{\
+    return std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
+        const Lattice<T2, D> &>(OP_NAME(name)(), lhs, rhs);\
+}\
+template <typename T1, typename Op2, typename... T2s, unsigned long D>\
+strong_inline auto op(const Lattice<T1, D> &lhs,\
+                     const std::tuple<Op2, T2s...> &rhs)\
+->std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
+             const std::tuple<Op2, T2s...> &>\
+{\
+    return std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
+        const std::tuple<Op2, T2s...> &>(OP_NAME(name)(), lhs, rhs);\
+}\
+template <typename Op1, typename... T1s, typename Op2, typename... T2s>\
+strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
+               const std::tuple<Op2, T2s...> &rhs)\
+->std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
+             const std::tuple<Op2, T2s...> &>\
+{\
+    return std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
+        const std::tuple<Op2, T2s...> &>(OP_NAME(name)(), lhs, rhs);\
 }
 
 DEFINE_OP(operator+, Add);

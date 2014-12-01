@@ -15,10 +15,20 @@ endif
 endif
 
 noinst_PROGRAMS =           \
-    exOp
+    exMatLibBench           \
+    exMatOpBench            \
+    exScalOpBench
 
-exOp_SOURCES = exOp.cpp
-exOp_CFLAGS  = -g -O2
-exOp_LDFLAGS  = -L../lib/.libs -lLatSim
+exMatLibBench_SOURCES  = exMatLibBench.cpp
+exMatLibBench_CXXFLAGS = $(COM_CXXFLAGS)
+exMatLibBench_LDFLAGS  = -L../lib/.libs -lLatSim
+
+exMatOpBench_SOURCES  = exMatOpBench.cpp
+exMatOpBench_CXXFLAGS = $(COM_CXXFLAGS)
+exMatOpBench_LDFLAGS  = -L../lib/.libs -lLatSim
+
+exScalOpBench_SOURCES  = exScalOpBench.cpp
+exScalOpBench_CXXFLAGS = $(COM_CXXFLAGS)
+exScalOpBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 ACLOCAL_AMFLAGS = -I .buildutils/m4

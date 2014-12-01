@@ -39,25 +39,27 @@ template<int... is>
 class SeqGen<1, is...>
 {
 public:
-    static ISeq<is...> seq(void) {return ISeq<is...>();};
+    static strong_inline ISeq<is...> seq(void) {return ISeq<is...>();};
 };
 
 template <typename T>
-auto inline eval(const unsigned long i, const T &arg)->decltype(arg[i])
+auto strong_inline eval(const unsigned long i, const T &arg)->decltype(arg[i])
 {
     return arg[i];
 }
 
 template <typename Op, typename... Ts, int... is>
-auto inline eval(const unsigned long i, const std::tuple<Op, Ts...> &expr,
-                 const ISeq<is...> &seq __unused)
+auto strong_inline eval(const unsigned long i,
+                        const std::tuple<Op, Ts...> &expr,
+                        const ISeq<is...> &seq __unused)
 ->decltype(std::get<0>(expr).eval(eval(i, std::get<is>(expr))...))
 {
     return std::get<0>(expr).eval(eval(i, std::get<is>(expr))...);
 }
 
 template <typename Op, typename... Ts>
-auto inline eval(const unsigned long i, const std::tuple<Op, Ts...> &expr)
+auto strong_inline eval(const unsigned long i,
+                        const std::tuple<Op, Ts...> &expr)
 ->decltype(eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq()))
 {
     return eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq());
@@ -70,7 +72,8 @@ template <typename LhsT, typename RhsT>
 class Add
 {
 public:
-    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs + rhs)
+    static auto strong_inline eval(const LhsT &lhs, const RhsT &rhs)
+    ->decltype(lhs + rhs)
     {
         return lhs + rhs;
     }
@@ -80,7 +83,8 @@ template <typename LhsT, typename RhsT>
 class Sub
 {
 public:
-    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs - rhs)
+    static auto strong_inline eval(const LhsT &lhs, const RhsT &rhs)
+    ->decltype(lhs - rhs)
     {
         return lhs - rhs;
     }
@@ -90,7 +94,8 @@ template <typename LhsT, typename RhsT>
 class Mul
 {
 public:
-    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs*rhs)
+    static auto strong_inline eval(const LhsT &lhs, const RhsT &rhs)
+    ->decltype(lhs*rhs)
     {
         return lhs*rhs;
     }
@@ -100,7 +105,8 @@ template <typename LhsT, typename RhsT>
 class Div
 {
 public:
-    static auto inline eval(const LhsT &lhs, const RhsT &rhs)->decltype(lhs/rhs)
+    static auto strong_inline eval(const LhsT &lhs, const RhsT &rhs)
+    ->decltype(lhs/rhs)
     {
         return lhs/rhs;
     }

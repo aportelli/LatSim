@@ -60,6 +60,17 @@ public:
     }
 };
 
+// matrix of float
+template <int nRow, int nCol>
+class MpiType<SFMat<nRow, nCol>>
+{
+public:
+    static void make(MPI_Datatype &type)
+    {
+        MPI_Type_contiguous(nRow*nCol, MPI_FLOAT, &type);
+    }
+};
+
 // matrix of double
 template <int nRow, int nCol>
 class MpiType<SDMat<nRow, nCol>>

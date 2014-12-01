@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h>
+
 #include <LatSim/Lattice.hpp>
 
 using namespace std;
@@ -7,16 +8,8 @@ using namespace LatSim;
 
 const unsigned int sleepTime = 1;
 
-class TestFunc
-{
-public:
-    template <typename T>
-    inline void operator()(T &out, const T &x, const T &y, const T &z)
-    {
-        out = x*(z*(y-x)+y*z*z*(x-y)+z+x);
-    }
-    static constexpr double nOp = 10.;
-};
+#define func(out, x, y, z) out = x*(z*(y-x)+y*z*z*(x-y)+z+x)
+#define funcFlop 10.
 
 int main(int argc, char *argv[])
 {
@@ -46,9 +39,8 @@ int main(int argc, char *argv[])
     registerGlobalLayout(layout);
 
     // LatSim implementation
-    double            time, nOp;
+    double                  time, nOp;
     Lattice<float, 4> x, y, z;
-    TestFunc          func;
 
     for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
     {
@@ -64,7 +56,7 @@ int main(int argc, char *argv[])
     }
     time = layout.time() - time;
     sleep(sleepTime);
-    nOp = n*TestFunc::nOp*static_cast<float>(layout.getVolume());
+    nOp = n*funcFlop*static_cast<float>(layout.getVolume());
     if (layout.getRank() == 0)
     {
         cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
@@ -123,6 +115,6 @@ int main(int argc, char *argv[])
     delete [] a;
     delete [] b;
     delete [] c;
-
+    
     return EXIT_SUCCESS;
 }

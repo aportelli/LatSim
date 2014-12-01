@@ -33,8 +33,24 @@
 #include <type_traits>
 #include <vector>
 #include <cstdlib>
+
+//#define EIGEN_NO_DEBUG
+#define EIGEN_DONT_PARALLELIZE
 #include <LatSim/Eigen/Dense>
+
 #include <mpi.h>
+
+#ifdef LATSIM_FORCE_INLINE
+#define strong_inline __attribute__((always_inline)) inline
+#else
+#define strong_inline inline
+#endif
+
+#ifdef LATSIM_FLATTEN
+#define flatten __attribute__((flatten))
+#else
+#define flatten
+#endif
 
 #define BEGIN_NAMESPACE namespace LatSim {
 #define END_NAMESPACE }
@@ -84,11 +100,15 @@ template <typename T, int nRow = dynamic, int nCol = dynamic>
 using Mat = Eigen::Matrix<T, nRow, nCol>;
 
 template <int nRow, int nCol>
+using SFMat = Eigen::Matrix<float, nRow, nCol>;
+
+template <int nRow, int nCol>
 using SDMat = Eigen::Matrix<double, nRow, nCol>;
 
 template <int nRow, int nCol>
 using SCMat = Eigen::Matrix<std::complex<double>, nRow, nCol>;
 
+typedef SFMat<dynamic, dynamic> FMat;
 typedef SDMat<dynamic, dynamic> DMat;
 typedef SCMat<dynamic, dynamic> CMat;
 
@@ -98,6 +118,9 @@ using Vec = Mat<T, size, 1>;
 
 template <int size>
 using SIVec = Vec<int, size>;
+
+template <int size>
+using SFVec = Vec<float, size>;
 
 template <int size>
 using SDVec = Vec<double, size>;
