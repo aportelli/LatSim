@@ -111,8 +111,6 @@ int main(int argc __unused, char *argv[])
     sleep(1);
     matMulBench<9>(nOp);
     sleep(1);
-    matMulBench<9>(nOp);
-    sleep(1);
 
     matAddBench<2>(nOp);
     sleep(1);
