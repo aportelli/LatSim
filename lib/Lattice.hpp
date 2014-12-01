@@ -119,10 +119,10 @@ strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
         const std::tuple<Op2, T2s...> &>(OP_NAME(name)(), lhs, rhs);\
 }
 
-DEFINE_OP(operator+, Add);
-DEFINE_OP(operator-, Sub);
-DEFINE_OP(operator*, Mul);
-DEFINE_OP(operator/, Div);
+DEFINE_OP(operator+, Add)
+DEFINE_OP(operator-, Sub)
+DEFINE_OP(operator*, Mul)
+DEFINE_OP(operator/, Div)
 
 /******************************************************************************
  *                          Lattice implementation                            *
@@ -136,13 +136,10 @@ void Lattice<T, D>::reallocate(const LayoutObject *layout)
 
     // allocate lattice and communication buffers
     unsigned long size = layout_->getLocalVolume()+layout_->getCommBufferSize();
-    void          *start;
 
     size += alignof(T);
     data_.reset(new T[size]);
-    start = data_.get();
-    std::align(alignof(T), size*sizeof(T), start, size);
-    lattice_ = static_cast<T *>(start);
+    lattice_       = data_.get();
     commBuffer_[0] = lattice_ + layout_->getLocalVolume();
     for (unsigned int d = 1; d < 2*D; ++d)
     {

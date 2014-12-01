@@ -20,9 +20,6 @@
 #ifndef LatSim_Global_hpp_
 #define	LatSim_Global_hpp_
 
-// supress warning for the osbolete use of 'register' keyword in Eigen
-#pragma GCC diagnostic ignored "-Wdeprecated-register"
-
 #include <array>
 #include <complex>
 #include <fstream>
