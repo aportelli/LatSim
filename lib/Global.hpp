@@ -32,8 +32,14 @@
 #include <cstdlib>
 
 //#define EIGEN_NO_DEBUG
+#pragma GCC diagnostic ignored "-Wdeprecated-register"
+#pragma GCC diagnostic ignored "-Wconversion"
+
 #define EIGEN_DONT_PARALLELIZE
 #include <LatSim/Eigen/Dense>
+
+#pragma GCC diagnostic warning "-Wdeprecated-register"
+#pragma GCC diagnostic warning "-Wconversion"
 
 #include <mpi.h>
 
@@ -76,7 +82,7 @@ Class & operator=(const ExprType<Derived> &m)\
 BEGIN_NAMESPACE
 
 // lattice coordinate type /////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 using Coord = std::array<unsigned int, D>;
 
 // Eigen type aliases //////////////////////////////////////////////////////////
@@ -165,7 +171,7 @@ typedef Mat<double>::Index Index;
 void globalError(const std::string msg, const std::string loc = "");
 
 // Indexing helpers ////////////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 inline unsigned int coordToRowMajor(const std::array<unsigned int, D> &x,
                                     const std::array<unsigned int, D> &dim)
 {
@@ -181,7 +187,7 @@ inline unsigned int coordToRowMajor(const std::array<unsigned int, D> &x,
     return ind;
 }
 
-template <unsigned long D>
+template <unsigned int D>
 inline std::array<unsigned int, D>
 rowMajorToCoord(const unsigned int ind, const std::array<unsigned int, D> &dim)
 {

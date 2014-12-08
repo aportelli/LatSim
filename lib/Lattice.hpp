@@ -32,7 +32,7 @@ BEGIN_NAMESPACE
  *                                Lattice                                     *
  ******************************************************************************/
 
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 class Lattice: public Logger
 {
 public:
@@ -44,25 +44,17 @@ public:
     // destructor
     virtual ~Lattice(void);
     // local site access
-    inline const T & operator[](const unsigned long i) const;
-    inline T &       operator[](const unsigned long i);
+    inline const T & operator[](const unsigned int i) const;
+    inline T &       operator[](const unsigned int i);
     // directional gathering
     //// non-blocking
     void gatherStart(const unsigned int d);
     void gatherWait(const unsigned int d);
     //// blocking
-    void gather(const unsigned d);
-    // assignement operator
+    void gather(const unsigned int d);
+    // expression evaluation
     template <typename Op, typename... Ts>
-    Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr) flatten
-    {
-        for (unsigned long i = 0; i < layout_->getLocalVolume(); ++i)
-        {
-            lattice_[i] = Expr::eval(i, expr);
-        }
-
-        return *this;
-    }
+    Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr) flatten;
 private:
     // helpers for constructors
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -83,7 +75,7 @@ private:
                                  decltype(Expr::eval(0lu, rhs))>
 
 #define DEFINE_OP(op, name)\
-template <typename T1, typename T2, unsigned long D>\
+template <typename T1, typename T2, unsigned int D>\
 strong_inline auto op(const Lattice<T1, D> &lhs, const Lattice<T2, D> &rhs)\
 ->std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
              const Lattice<T2, D> &>\
@@ -91,7 +83,7 @@ strong_inline auto op(const Lattice<T1, D> &lhs, const Lattice<T2, D> &rhs)\
     return std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
         const Lattice<T2, D> &>(OP_NAME(name)(), lhs, rhs);\
 }\
-template <typename Op1, typename... T1s, typename T2, unsigned long D>\
+template <typename Op1, typename... T1s, typename T2, unsigned int D>\
 strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
                      const Lattice<T2, D> &rhs)\
 ->std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
@@ -100,7 +92,7 @@ strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
     return std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
         const Lattice<T2, D> &>(OP_NAME(name)(), lhs, rhs);\
 }\
-template <typename T1, typename Op2, typename... T2s, unsigned long D>\
+template <typename T1, typename Op2, typename... T2s, unsigned int D>\
 strong_inline auto op(const Lattice<T1, D> &lhs,\
                      const std::tuple<Op2, T2s...> &rhs)\
 ->std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
@@ -128,14 +120,14 @@ DEFINE_OP(operator/, Div)
  *                          Lattice implementation                            *
  ******************************************************************************/
 // helpers for constructors ////////////////////////////////////////////////////
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 void Lattice<T, D>::reallocate(const LayoutObject *layout)
 {
     // set layout
     layout_  = dynamic_cast<const Layout<D> *>(layout);
 
     // allocate lattice and communication buffers
-    unsigned long size = layout_->getLocalVolume()+layout_->getCommBufferSize();
+    unsigned int size = layout_->getLocalVolume()+layout_->getCommBufferSize();
 
     size += alignof(T);
     data_.reset(new T[size]);
@@ -147,7 +139,7 @@ void Lattice<T, D>::reallocate(const LayoutObject *layout)
     }
 }
 
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 void Lattice<T, D>::createMpiTypes(void)
 {
     // create base MPI data type
@@ -157,19 +149,21 @@ void Lattice<T, D>::createMpiTypes(void)
     // creat MPI types for planes and communication buffers
     for (unsigned int d = 0; d < D; ++d)
     {
-        const auto &p = layout_->getPlaneInfo(d);
+        const auto &p         = layout_->getPlaneInfo(d);
+        const int  locSurface = static_cast<int>(layout_->getLocalSurface(d));
+        const int  n          = static_cast<int>(p.nBlocks);
+        const int  size       = static_cast<int>(p.blockSize);
+        const int  stride     = static_cast<int>(p.stride);
 
-        MPI_Type_contiguous(layout_->getLocalSurface(d), mpiElemType_,
-                            &mpiBufType_[d]);
+        MPI_Type_contiguous(locSurface, mpiElemType_, &mpiBufType_[d]);
         MPI_Type_commit(&mpiBufType_[d]);
-        MPI_Type_vector(p.nBlocks, p.blockSize, p.stride, mpiElemType_,
-                        &mpiPlaneType_[d]);
+        MPI_Type_vector(n, size, stride, mpiElemType_, &mpiPlaneType_[d]);
         MPI_Type_commit(&mpiPlaneType_[d]);
     }
 }
 
 // constructors ////////////////////////////////////////////////////////////////
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 Lattice<T, D>::Lattice(const LayoutObject *layout)
 : Logger("Lattice")
 {
@@ -177,12 +171,12 @@ Lattice<T, D>::Lattice(const LayoutObject *layout)
     createMpiTypes();
 }
 
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 Lattice<T, D>::Lattice(const Lattice<T, D> &rhs)
 {
     if (this != &rhs)
     {
-        const unsigned long size = rhs.layout_->getLocalVolume();
+        const unsigned int size = rhs.layout_->getLocalVolume();
 
         if (layout_ != rhs.layout_)
         {
@@ -194,7 +188,7 @@ Lattice<T, D>::Lattice(const Lattice<T, D> &rhs)
 }
 
 // destructor //////////////////////////////////////////////////////////////////
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 Lattice<T, D>::~Lattice(void)
 {
     for (unsigned int d = 0; d < D; ++d)
@@ -206,20 +200,20 @@ Lattice<T, D>::~Lattice(void)
 }
 
 // local site access
-template <typename T, unsigned long D>
-inline const T & Lattice<T, D>::operator[](const unsigned long i) const
+template <typename T, unsigned int D>
+inline const T & Lattice<T, D>::operator[](const unsigned int i) const
 {
     return lattice_[i];
 }
 
-template <typename T, unsigned long D>
-inline T & Lattice<T, D>::operator[](const unsigned long i)
+template <typename T, unsigned int D>
+inline T & Lattice<T, D>::operator[](const unsigned int i)
 {
     return lattice_[i];
 }
 
 // directional gathering ///////////////////////////////////////////////////////
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 void Lattice<T, D>::gatherStart(const unsigned int d)
 {
     if (layout_->needComm(d))
@@ -238,7 +232,7 @@ void Lattice<T, D>::gatherStart(const unsigned int d)
     }
 }
 
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 void Lattice<T, D>::gatherWait(const unsigned int d)
 {
     if (layout_->needComm(d))
@@ -248,11 +242,24 @@ void Lattice<T, D>::gatherWait(const unsigned int d)
     }
 }
 
-template <typename T, unsigned long D>
+template <typename T, unsigned int D>
 void Lattice<T, D>::gather(const unsigned int d)
 {
     gatherStart(d);
     gatherWait(d);
+}
+
+// expression evaluation ///////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+template <typename Op, typename... Ts>
+Lattice<T, D> & Lattice<T, D>::operator=(const std::tuple<Op, Ts...> &expr)
+{
+    for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
+    {
+        lattice_[i] = Expr::eval(i, expr);
+    }
+
+    return *this;
 }
 
 END_NAMESPACE

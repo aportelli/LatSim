@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     double                  time, nOp;
     Lattice<float, 4> x, y, z;
 
-    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
         x[i] = 2*static_cast<float>(argc)+i;
         y[i] = 3*static_cast<float>(argc)+i;
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     }
 
     // naive implementation with lattices
-    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
         x[i] = 2*static_cast<float>(argc)+i;
         y[i] = 3*static_cast<float>(argc)+i;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     time = layout.time();
     for (int j = 0; j < n; ++j)
     {
-        for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+        for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
         {
             func(z[i], x[i], y[i], z[i]);
         }
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     float *b = new float[layout.getLocalVolume()];
     float *c = new float[layout.getLocalVolume()];
 
-    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
         a[i] = 2*static_cast<float>(argc)+i;
         b[i] = 3*static_cast<float>(argc)+i;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     time = layout.time();
     for (int j = 0; j < n; ++j)
     {
-        for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+        for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
         {
             func(c[i], a[i], b[i], c[i]);
         }

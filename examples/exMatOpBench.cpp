@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     double                  time, nOp;
     Lattice<SFMat<N, N>, 4> x, y, z;
 
-    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
         x[i].fill(2*static_cast<float>(argc)+i);
         y[i].fill(3*static_cast<float>(argc)+i);
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     }
 
     // naive implementation with lattices
-    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
         x[i].fill(2*static_cast<float>(argc)+i);
         y[i].fill(3*static_cast<float>(argc)+i);
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     time = layout.time();
     for (int j = 0; j < n; ++j)
     {
-        for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+        for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
         {
             func(z[i], x[i], y[i], z[i]);
         }
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     SFMat<N, N> *b = new SFMat<N, N>[layout.getLocalVolume()];
     SFMat<N, N> *c = new SFMat<N, N>[layout.getLocalVolume()];
 
-    for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+    for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
         a[i].fill(2*static_cast<float>(argc)+i);
         b[i].fill(3*static_cast<float>(argc)+i);
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
     time = layout.time();
     for (int j = 0; j < n; ++j)
     {
-        for (unsigned long i = 0; i < layout.getLocalVolume(); ++i)
+        for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
         {
             func(c[i], a[i], b[i], c[i]);
         }

@@ -10,10 +10,11 @@ using namespace LatSim;
 template <unsigned int N>
 void matMulBench(const unsigned long nMul)
 {
-    SFMat<N, N>      m = SFMat<N, N>::Random(), n = SFMat<N, N>::Random(), p;
-    constexpr double nOp = N*N*(2.*N - 1.);
-    double           time, avTime;
-    int              rank, size;
+    SFMat<N, N>   m = SFMat<N, N>::Random(), n = SFMat<N, N>::Random(), p;
+    unsigned int  nOp = N*N*(2*N - 1);
+    double        time, avTime;
+    int           rank, size;
+    unsigned long flop;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -27,20 +28,23 @@ void matMulBench(const unsigned long nMul)
     if (rank == 0)
     {
         avTime /= size;
+        flop    = static_cast<unsigned long>(size)*nMul*nOp;
         cout << setw(10) << strFrom(N) + "x" + strFrom(N) + " MUL:";
         cout << setw(20) << strFrom(time) + "s";
-        cout << setw(20) << strFrom(size*nMul*nOp) + " flop";
-        cout << setw(20) << strFrom((size*nMul*nOp)/time) + " flop/s" << endl;
+        cout << setw(20) << strFrom(flop)
+                            + " flop";
+        cout << setw(20) << strFrom(flop/time) + " flop/s" << endl;
     }
 }
 
 template <unsigned int N>
 void matAddBench(const unsigned long nAdd)
 {
-    SFMat<N, N>      m = SFMat<N, N>::Random(), n = SFMat<N, N>::Random(), p;
-    constexpr double nOp = N*N;
-    double           time, avTime;
-    int              rank, size;
+    SFMat<N, N>   m = SFMat<N, N>::Random(), n = SFMat<N, N>::Random(), p;
+    unsigned int  nOp = N*N;
+    double        time, avTime;
+    int           rank, size;
+    unsigned long flop;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -54,21 +58,23 @@ void matAddBench(const unsigned long nAdd)
     if (rank == 0)
     {
         avTime /= size;
+        flop    = static_cast<unsigned long>(size)*nAdd*nOp;
         cout << setw(10) << strFrom(N) + "x" + strFrom(N) + " ADD:";
         cout << setw(20) << strFrom(time) + "s";
-        cout << setw(20) << strFrom(size*nAdd*nOp) + " flop";
-        cout << setw(20) << strFrom((size*nAdd*nOp)/time) + " flop/s" << endl;
+        cout << setw(20) << strFrom(flop) + " flop";
+        cout << setw(20) << strFrom(flop/time) + " flop/s" << endl;
     }
 }
 
 template <unsigned int N>
 void matExprBench(const unsigned long nExpr)
 {
-    SFMat<N, N>      x = SFMat<N, N>::Random(), y = SFMat<N, N>::Random(),
-                     z = SFMat<N, N>::Random();
-    constexpr double nOp = 5.*N*N + 5.*N*N*(2.*N - 1.);
-    double           time, avTime;
-    int              rank, size;
+    SFMat<N, N>   x = SFMat<N, N>::Random(), y = SFMat<N, N>::Random(),
+                  z = SFMat<N, N>::Random();
+    unsigned int  nOp = 5*N*N + 5*N*N*(2*N - 1);
+    double        time, avTime;
+    int           rank, size;
+    unsigned long flop;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -82,10 +88,11 @@ void matExprBench(const unsigned long nExpr)
     if (rank == 0)
     {
         avTime /= size;
-        cout << setw(10) << strFrom(N) + "x" + strFrom(N) + " EXPR:";
+        flop    = static_cast<unsigned long>(size)*nExpr*nOp;
+        cout << setw(10) << strFrom(N) + "x" + strFrom(N) + " ADD:";
         cout << setw(20) << strFrom(time) + "s";
-        cout << setw(20) << strFrom(size*nExpr*nOp) + " flop";
-        cout << setw(20) << strFrom((size*nExpr*nOp)/time) + " flop/s" << endl;
+        cout << setw(20) << strFrom(flop) + " flop";
+        cout << setw(20) << strFrom(flop/time) + " flop/s" << endl;
     }
 }
 

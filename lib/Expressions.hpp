@@ -43,13 +43,13 @@ public:
 };
 
 template <typename T>
-auto strong_inline eval(const unsigned long i, const T &arg)->decltype(arg[i])
+auto strong_inline eval(const unsigned int i, const T &arg)->decltype(arg[i])
 {
     return arg[i];
 }
 
 template <typename Op, typename... Ts, int... is>
-auto strong_inline eval(const unsigned long i,
+auto strong_inline eval(const unsigned int i,
                         const std::tuple<Op, Ts...> &expr,
                         const ISeq<is...> &seq __unused)
 ->decltype(std::get<0>(expr).eval(eval(i, std::get<is>(expr))...))
@@ -58,7 +58,7 @@ auto strong_inline eval(const unsigned long i,
 }
 
 template <typename Op, typename... Ts>
-auto strong_inline eval(const unsigned long i,
+auto strong_inline eval(const unsigned int i,
                         const std::tuple<Op, Ts...> &expr)
 ->decltype(eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq()))
 {

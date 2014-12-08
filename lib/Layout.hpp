@@ -36,13 +36,13 @@ public:
 };
 
 // layout class
-template <unsigned long D>
+template <unsigned int D>
 class Layout: public LayoutObject, public Logger
 {
 public:
     struct PlaneInfo
     {
-        unsigned long nBlocks, blockSize, stride;
+        unsigned int nBlocks, blockSize, stride;
     };
 public:
     // constructor
@@ -53,10 +53,10 @@ public:
     unsigned int      getRank(void) const;
     unsigned int      getDim(const unsigned int d) const;
     unsigned int      getLocalDim(const unsigned int d) const;
-    unsigned long     getLocalSurface(const unsigned int d) const;
-    unsigned long     getVolume(void) const;
-    unsigned long     getLocalVolume(void) const;
-    unsigned long     getCommBufferSize(void) const;
+    unsigned int     getLocalSurface(const unsigned int d) const;
+    unsigned int     getVolume(void) const;
+    unsigned int     getLocalVolume(void) const;
+    unsigned int     getCommBufferSize(void) const;
     const PlaneInfo & getPlaneInfo(const unsigned int d) const;
     const MPI_Comm &  getCommGrid(void) const;
     const MPI_Comm &  getDirCommGrid(const unsigned int d) const;
@@ -73,21 +73,20 @@ public:
     // clock
     static double time(void);
 private:
-    int                          rank_;
-    unsigned long                volume_, locVolume_, commBufferSize_;
-    std::array<unsigned long, D> locSurface_;
-    std::array<int, D>           p_, coord_;
-    std::array<bool, D>          needComm_;
-    Coord<D>                     dim_, locDim_;
-    MPI_Comm                     commGrid_;
-    std::array<MPI_Comm, D>      dirCommGrid_;
-    std::array<PlaneInfo, D>     planeInfo_;
+    int                         rank_;
+    unsigned int                volume_, locVolume_, commBufferSize_;
+    std::array<int, D>          p_, coord_;
+    std::array<bool, D>         needComm_;
+    Coord<D>                    locSurface_, dim_, locDim_;
+    MPI_Comm                    commGrid_;
+    std::array<MPI_Comm, D>     dirCommGrid_;
+    std::array<PlaneInfo, D>    planeInfo_;
 };
 
 // global layout
 extern LayoutObject *globalLayout;
 
-template <unsigned long D>
+template <unsigned int D>
 void registerGlobalLayout(Layout<D> &layout)
 {
     globalLayout = &layout;
@@ -97,7 +96,7 @@ void registerGlobalLayout(Layout<D> &layout)
  *                           Layout implementation                            *
  ******************************************************************************/
 // constructor /////////////////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
 : Logger("Layout")
 , dim_(dim)
@@ -138,7 +137,7 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     masterLog("MPI partition    : " + buf);
     for (unsigned int d = 0; d < D; ++d)
     {
-        if (dim_[d] % p_[d] != 0)
+        if (dim_[d] % static_cast<unsigned int>(p_[d]) != 0)
         {
             locGlobalError("lattice size (" + strFrom(dim_[d]) +
                            ") is not divisible by the number of processes (" +
@@ -162,7 +161,7 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     commBufferSize_ = 0;
     for (unsigned int d = 0; d < D; ++d)
     {
-        locDim_[d] = dim_[d]/p_[d];
+        locDim_[d] = dim_[d]/static_cast<unsigned int>(p_[d]);
     }
     for (unsigned int d = 0; d < D; ++d)
     {
@@ -233,7 +232,7 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
 }
 
 // destructor //////////////////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 Layout<D>::~Layout(void)
 {
     MPI_Barrier(MPI_COMM_WORLD);
@@ -242,13 +241,13 @@ Layout<D>::~Layout(void)
 }
 
 // access //////////////////////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 unsigned int Layout<D>::getRank(void) const
 {
-    return rank_;
+    return static_cast<unsigned int>(rank_);
 }
 
-template <unsigned long D>
+template <unsigned int D>
 unsigned int Layout<D>::getDim(const unsigned int d) const
 {
     checkDir(d);
@@ -256,7 +255,7 @@ unsigned int Layout<D>::getDim(const unsigned int d) const
     return dim_[absDir(d)];
 }
 
-template <unsigned long D>
+template <unsigned int D>
 unsigned int Layout<D>::getLocalDim(const unsigned int d) const
 {
     checkDir(d);
@@ -264,33 +263,33 @@ unsigned int Layout<D>::getLocalDim(const unsigned int d) const
     return locDim_[absDir(d)];
 }
 
-template <unsigned long D>
-unsigned long Layout<D>::getLocalSurface(const unsigned int d) const
+template <unsigned int D>
+unsigned int Layout<D>::getLocalSurface(const unsigned int d) const
 {
     checkDir(d);
 
     return locSurface_[absDir(d)];
 }
 
-template <unsigned long D>
-unsigned long Layout<D>::getVolume(void) const
+template <unsigned int D>
+unsigned int Layout<D>::getVolume(void) const
 {
     return volume_;
 }
 
-template <unsigned long D>
-unsigned long Layout<D>::getLocalVolume(void) const
+template <unsigned int D>
+unsigned int Layout<D>::getLocalVolume(void) const
 {
     return locVolume_;
 }
 
-template <unsigned long D>
-unsigned long Layout<D>::getCommBufferSize(void) const
+template <unsigned int D>
+unsigned int Layout<D>::getCommBufferSize(void) const
 {
     return commBufferSize_;
 }
 
-template <unsigned long D>
+template <unsigned int D>
 const typename Layout<D>::PlaneInfo &
 Layout<D>::getPlaneInfo(const unsigned int d) const
 {
@@ -299,13 +298,13 @@ Layout<D>::getPlaneInfo(const unsigned int d) const
     return planeInfo_[absDir(d)];
 }
 
-template <unsigned long D>
+template <unsigned int D>
 const MPI_Comm & Layout<D>::getCommGrid(void) const
 {
     return commGrid_;
 }
 
-template <unsigned long D>
+template <unsigned int D>
 const MPI_Comm & Layout<D>::getDirCommGrid(const unsigned int d) const
 {
     checkDir(d);
@@ -314,7 +313,7 @@ const MPI_Comm & Layout<D>::getDirCommGrid(const unsigned int d) const
 }
 
 // check ///////////////////////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 void Layout<D>::checkDir(const unsigned int d)
 {
     if (d >= 2*D)
@@ -325,21 +324,21 @@ void Layout<D>::checkDir(const unsigned int d)
 }
 
 // get absolute direction //////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 unsigned int Layout<D>::absDir(const unsigned int d)
 {
     return d % D;
 }
 
 // get opposite direction //////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 unsigned int Layout<D>::oppDir(const unsigned int d)
 {
     return (d + D) % (2*D);
 }
 
 // get neighbor coordinate in the grid /////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 int Layout<D>::neighborCoord(const unsigned int d) const
 {
     int ad = absDir(d);
@@ -351,14 +350,14 @@ int Layout<D>::neighborCoord(const unsigned int d) const
 }
 
 // need communication in direction d? //////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 bool Layout<D>::needComm(const unsigned d) const
 {
     return needComm_[absDir(d)];
 }
 
 // clock ///////////////////////////////////////////////////////////////////////
-template <unsigned long D>
+template <unsigned int D>
 double Layout<D>::time(void)
 {
     return MPI_Wtime();
