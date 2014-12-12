@@ -54,7 +54,7 @@ public:
     void gather(const unsigned int d);
     // expression evaluation
     template <typename Op, typename... Ts>
-    Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr) flatten;
+    inline Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr) flatten;
 private:
     // helpers for constructors
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -252,7 +252,8 @@ void Lattice<T, D>::gather(const unsigned int d)
 // expression evaluation ///////////////////////////////////////////////////////
 template <typename T, unsigned int D>
 template <typename Op, typename... Ts>
-Lattice<T, D> & Lattice<T, D>::operator=(const std::tuple<Op, Ts...> &expr)
+inline Lattice<T, D> &
+Lattice<T, D>::operator=(const std::tuple<Op, Ts...> &expr) flatten
 {
     for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
     {

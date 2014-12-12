@@ -53,10 +53,10 @@ public:
     unsigned int      getRank(void) const;
     unsigned int      getDim(const unsigned int d) const;
     unsigned int      getLocalDim(const unsigned int d) const;
-    unsigned int     getLocalSurface(const unsigned int d) const;
-    unsigned int     getVolume(void) const;
-    unsigned int     getLocalVolume(void) const;
-    unsigned int     getCommBufferSize(void) const;
+    unsigned int      getLocalSurface(const unsigned int d) const;
+    unsigned int      getVolume(void) const;
+    unsigned int      getLocalVolume(void) const;
+    unsigned int      getCommBufferSize(void) const;
     const PlaneInfo & getPlaneInfo(const unsigned int d) const;
     const MPI_Comm &  getCommGrid(void) const;
     const MPI_Comm &  getDirCommGrid(const unsigned int d) const;
