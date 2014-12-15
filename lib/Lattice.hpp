@@ -82,7 +82,7 @@ strong_inline auto op(const T1 &lhs, const T2 &rhs)\
     return LatExpr<OP(name), const T1 &, const T2 &>(OP(name)(), lhs, rhs);\
 }
 
-DEFINE_OP(operator+, Sub)
+DEFINE_OP(operator+, Add)
 DEFINE_OP(operator-, Sub)
 DEFINE_OP(operator*, Mul)
 DEFINE_OP(operator/, Div)
