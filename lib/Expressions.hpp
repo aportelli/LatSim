@@ -27,6 +27,14 @@
 #define END_EXPR_NAMESPACE   }
 
 BEGIN_NAMESPACE
+
+template <typename Op, typename... Ts>
+class LatExpr: public std::tuple<Op, Ts...>, public LatticeObj
+{
+public:
+    using std::tuple<Op, Ts...>::tuple;
+};
+
 BEGIN_EXPR_NAMESPACE
 
 template<int... is>
@@ -50,7 +58,7 @@ auto strong_inline eval(const unsigned int i, const T &arg)->decltype(arg[i])
 
 template <typename Op, typename... Ts, int... is>
 auto strong_inline eval(const unsigned int i,
-                        const std::tuple<Op, Ts...> &expr,
+                        const LatExpr<Op, Ts...> &expr,
                         const ISeq<is...> &seq __unused)
 ->decltype(std::get<0>(expr).eval(eval(i, std::get<is>(expr))...))
 {
@@ -59,7 +67,7 @@ auto strong_inline eval(const unsigned int i,
 
 template <typename Op, typename... Ts>
 auto strong_inline eval(const unsigned int i,
-                        const std::tuple<Op, Ts...> &expr)
+                        const LatExpr<Op, Ts...> &expr)
 ->decltype(eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq()))
 {
     return eval(i, expr, SeqGen<sizeof...(Ts)+1>::seq());

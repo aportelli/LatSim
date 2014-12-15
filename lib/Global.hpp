@@ -85,6 +85,9 @@ BEGIN_NAMESPACE
 template <unsigned int D>
 using Coord = std::array<unsigned int, D>;
 
+// lattice base type ///////////////////////////////////////////////////////////
+class LatticeObj {};
+
 // Eigen type aliases //////////////////////////////////////////////////////////
 const int dynamic = -1;
 
@@ -206,27 +209,6 @@ rowMajorToCoord(const unsigned int ind, const std::array<unsigned int, D> &dim)
     return x;
 }
 
-// Type utilities //////////////////////////////////////////////////////////////
-// pointer type test
-template <typename Derived, typename Base>
-inline bool isDerivedFrom(const Base *pt)
-{
-    return (dynamic_cast<const Derived *>(pt) != nullptr);
-}
-
-// static logical or
-template <bool... b>
-struct static_or;
-
-template <bool... tail>
-struct static_or<true, tail...> : static_or<tail...> {};
-
-template <bool... tail>
-struct static_or<false, tail...> : std::false_type {};
-
-template <>
-struct static_or<> : std::true_type {};
-
 // Environment /////////////////////////////////////////////////////////////////
 namespace Env
 {
@@ -323,29 +305,6 @@ inline IVec strTo<IVec>(const std::string &str)
     
     return res;
 }
-
-// Progress bar class //////////////////////////////////////////////////////////
-class ProgressBar
-{
-public:
-    // constructor
-    template <typename A, typename B>
-    ProgressBar(const A current, const B total, const Index nCol = 60);
-    // IO
-    friend std::ostream & operator<<(std::ostream &out,
-                                             const ProgressBar &&bar);
-private:
-    Index current_, total_, nCol_;
-};
-
-std::ostream & operator<<(std::ostream &out, const ProgressBar &&bar);
-
-template <typename A, typename B>
-ProgressBar::ProgressBar(const A current, const B total, const Index nCol)
-: current_(static_cast<Index>(current))
-, total_(static_cast<Index>(total))
-, nCol_(nCol)
-{}
 
 END_NAMESPACE
 

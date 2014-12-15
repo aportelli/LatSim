@@ -31,9 +31,8 @@ BEGIN_NAMESPACE
 /******************************************************************************
  *                                Lattice                                     *
  ******************************************************************************/
-
 template <typename T, unsigned int D>
-class Lattice: public Logger
+class Lattice: public Logger, public LatticeObj
 {
 public:
     typedef T SiteType;
@@ -54,7 +53,7 @@ public:
     void gather(const unsigned int d);
     // expression evaluation
     template <typename Op, typename... Ts>
-    inline Lattice<T, D> & operator=(const std::tuple<Op, Ts...> &expr) flatten;
+    inline Lattice<T, D> & operator=(const LatExpr<Op, Ts...> &expr) flatten;
 private:
     // helpers for constructors
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -71,47 +70,19 @@ private:
 };
 
 // arithmetic operators
-#define OP_NAME(name) Expr::name<decltype(Expr::eval(0lu, lhs)),\
+#define OP(name) Expr::name<decltype(Expr::eval(0lu, lhs)),\
                                  decltype(Expr::eval(0lu, rhs))>
-
 #define DEFINE_OP(op, name)\
-template <typename T1, typename T2, unsigned int D>\
-strong_inline auto op(const Lattice<T1, D> &lhs, const Lattice<T2, D> &rhs)\
-->std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
-             const Lattice<T2, D> &>\
+template <typename T1, typename T2>\
+strong_inline auto op(const T1 &lhs, const T2 &rhs)\
+->typename std::enable_if<std::is_base_of<LatticeObj, T1>::value\
+                          &&std::is_base_of<LatticeObj, T2>::value,\
+                          LatExpr<OP(name), const T1 &, const T2 &>>::type\
 {\
-    return std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
-        const Lattice<T2, D> &>(OP_NAME(name)(), lhs, rhs);\
-}\
-template <typename Op1, typename... T1s, typename T2, unsigned int D>\
-strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
-                     const Lattice<T2, D> &rhs)\
-->std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
-             const Lattice<T2, D> &>\
-{\
-    return std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
-        const Lattice<T2, D> &>(OP_NAME(name)(), lhs, rhs);\
-}\
-template <typename T1, typename Op2, typename... T2s, unsigned int D>\
-strong_inline auto op(const Lattice<T1, D> &lhs,\
-                     const std::tuple<Op2, T2s...> &rhs)\
-->std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
-             const std::tuple<Op2, T2s...> &>\
-{\
-    return std::tuple<OP_NAME(name), const Lattice<T1, D> &,\
-        const std::tuple<Op2, T2s...> &>(OP_NAME(name)(), lhs, rhs);\
-}\
-template <typename Op1, typename... T1s, typename Op2, typename... T2s>\
-strong_inline auto op(const std::tuple<Op1, T1s...> &lhs,\
-               const std::tuple<Op2, T2s...> &rhs)\
-->std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
-             const std::tuple<Op2, T2s...> &>\
-{\
-    return std::tuple<OP_NAME(name), const std::tuple<Op1, T1s...> &,\
-        const std::tuple<Op2, T2s...> &>(OP_NAME(name)(), lhs, rhs);\
+    return LatExpr<OP(name), const T1 &, const T2 &>(OP(name)(), lhs, rhs);\
 }
 
-DEFINE_OP(operator+, Add)
+DEFINE_OP(operator+, Sub)
 DEFINE_OP(operator-, Sub)
 DEFINE_OP(operator*, Mul)
 DEFINE_OP(operator/, Div)
@@ -253,7 +224,7 @@ void Lattice<T, D>::gather(const unsigned int d)
 template <typename T, unsigned int D>
 template <typename Op, typename... Ts>
 inline Lattice<T, D> &
-Lattice<T, D>::operator=(const std::tuple<Op, Ts...> &expr) flatten
+Lattice<T, D>::operator=(const LatExpr<Op, Ts...> &expr) flatten
 {
     for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
     {
