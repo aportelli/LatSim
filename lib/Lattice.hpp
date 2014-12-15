@@ -40,6 +40,7 @@ public:
     // constructors
     explicit Lattice(const LayoutObject *layout = globalLayout);
     Lattice(const Lattice<T, D> &l);
+    Lattice(Lattice<T, D> &&l);
     // destructor
     virtual ~Lattice(void);
     // local site access
@@ -51,18 +52,23 @@ public:
     void gatherWait(const unsigned int d);
     //// blocking
     void gather(const unsigned int d);
+    // assignement operator
+    Lattice<T, D> & operator=(Lattice<T, D> l);
     // expression evaluation
     template <typename Op, typename... Ts>
     inline Lattice<T, D> & operator=(const LatExpr<Op, Ts...> &expr) flatten;
 private:
-    // helpers for constructors
+    // helpers for constructors/destructor
     void reallocate(const LayoutObject *layout = globalLayout);
+    void clear(void);
+    void swap(Lattice<T, D> &l);
     void createMpiTypes(void);
 private:
     const Layout<D>              *layout_;
     std::unique_ptr<T>           data_;
     T                            *lattice_;
     std::array<T *, 2*D>         commBuffer_;
+    bool                         mpiTypesInit_;
     MPI_Datatype                 mpiElemType_;
     std::array<MPI_Datatype, D>  mpiBufType_, mpiPlaneType_;
     std::array<MPI_Request, 2*D> sReq_, rReq_;
@@ -95,7 +101,7 @@ template <typename T, unsigned int D>
 void Lattice<T, D>::reallocate(const LayoutObject *layout)
 {
     // set layout
-    layout_  = dynamic_cast<const Layout<D> *>(layout);
+    layout_ = dynamic_cast<const Layout<D> *>(layout);
 
     // allocate lattice and communication buffers
     unsigned int size = layout_->getLocalVolume()+layout_->getCommBufferSize();
@@ -108,6 +114,47 @@ void Lattice<T, D>::reallocate(const LayoutObject *layout)
     {
         commBuffer_[d] = commBuffer_[d-1] + layout_->getLocalSurface(d);
     }
+}
+
+template <typename T, unsigned int D>
+void Lattice<T, D>::clear(void)
+{
+    layout_  = nullptr;
+    data_.reset(nullptr);
+    lattice_ = nullptr;
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        commBuffer_[d] = nullptr;
+    }
+    if (mpiTypesInit_)
+    {
+        for (unsigned int d = 0; d < D; ++d)
+        {
+            MPI_Type_free(&mpiBufType_[d]);
+            MPI_Type_free(&mpiPlaneType_[d]);
+        }
+        MPI_Type_free(&mpiElemType_);
+    }
+    mpiTypesInit_ = false;
+}
+
+template <typename T, unsigned int D>
+void Lattice<T, D>::swap(Lattice<T, D> &l)
+{
+    using std::swap;
+
+    swap(layout_, l.layout_);
+    swap(data_, l.data_);
+    swap(lattice_, l.lattice_);
+    swap(commBuffer_, l.commBuffer_);
+    swap(mpiTypesInit_, l.mpiTypesInit_);
+    swap(mpiElemType_, l.mpiElemType_);
+    swap(mpiBufType_, l.mpiBufType_);
+    swap(mpiPlaneType_, l.mpiPlaneType_);
+    swap(sReq_, l.sReq_);
+    swap(rReq_, l.rReq_);
+    swap(sStatus_, l.sStatus_);
+    swap(rStatus_, l.rStatus_);
 }
 
 template <typename T, unsigned int D>
@@ -131,6 +178,7 @@ void Lattice<T, D>::createMpiTypes(void)
         MPI_Type_vector(n, size, stride, mpiElemType_, &mpiPlaneType_[d]);
         MPI_Type_commit(&mpiPlaneType_[d]);
     }
+    mpiTypesInit_ = true;
 }
 
 // constructors ////////////////////////////////////////////////////////////////
@@ -138,13 +186,22 @@ template <typename T, unsigned int D>
 Lattice<T, D>::Lattice(const LayoutObject *layout)
 : Logger("Lattice")
 {
-    reallocate(layout);
-    createMpiTypes();
+    if (layout != nullptr)
+    {
+        reallocate(layout);
+        createMpiTypes();
+    }
+    else
+    {
+        clear();
+    }
 }
 
 template <typename T, unsigned int D>
 Lattice<T, D>::Lattice(const Lattice<T, D> &rhs)
+: Lattice(nullptr)
 {
+    masterLog("copy constructor");
     if (this != &rhs)
     {
         const unsigned int size = rhs.layout_->getLocalVolume();
@@ -153,24 +210,27 @@ Lattice<T, D>::Lattice(const Lattice<T, D> &rhs)
         {
             reallocate(rhs.layout_);
         }
-        std::copy(rhs.lattice_, rhs.lattice_ + size, size);
+        std::copy(rhs.lattice_, rhs.lattice_ + size, lattice_);
         createMpiTypes();
     }
+}
+
+template <typename T, unsigned int D>
+Lattice<T, D>::Lattice(Lattice<T, D> &&rhs)
+: Lattice(nullptr)
+{
+    masterLog("move constructor");
+    this->swap(rhs);
 }
 
 // destructor //////////////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
 Lattice<T, D>::~Lattice(void)
 {
-    for (unsigned int d = 0; d < D; ++d)
-    {
-        MPI_Type_free(&mpiBufType_[d]);
-        MPI_Type_free(&mpiPlaneType_[d]);
-    }
-    MPI_Type_free(&mpiElemType_);
+    clear();
 }
 
-// local site access
+// local site access ///////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
 inline const T & Lattice<T, D>::operator[](const unsigned int i) const
 {
@@ -218,6 +278,15 @@ void Lattice<T, D>::gather(const unsigned int d)
 {
     gatherStart(d);
     gatherWait(d);
+}
+
+// assignement operator ////////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+Lattice<T, D> & Lattice<T, D>::operator=(Lattice<T, D> l)
+{
+    this->swap(l);
+
+    return *this;
 }
 
 // expression evaluation ///////////////////////////////////////////////////////
