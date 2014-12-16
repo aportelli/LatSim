@@ -44,8 +44,11 @@ public:
     // destructor
     virtual ~Lattice(void);
     // local site access
-    inline const T & operator[](const unsigned int i) const;
-    inline T &       operator[](const unsigned int i);
+    inline const T & operator()(const unsigned int i) const;
+    inline T &       operator()(const unsigned int i);
+    inline const T & operator()(const unsigned int i,
+                                const unsigned int d) const;
+    inline T &       operator()(const unsigned int i, const unsigned int d);
     // directional gathering
     //// non-blocking
     void gatherStart(const unsigned int d);
@@ -232,13 +235,26 @@ Lattice<T, D>::~Lattice(void)
 
 // local site access ///////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
-inline const T & Lattice<T, D>::operator[](const unsigned int i) const
+inline const T & Lattice<T, D>::operator()(const unsigned int i,
+                                           const unsigned int d) const
+{
+    return lattice_[layout_->getNearNeigh(i, d)];
+}
+
+template <typename T, unsigned int D>
+inline T & Lattice<T, D>::operator()(const unsigned int i, const unsigned int d)
+{
+    return lattice_[layout_->getNearNeigh(i, d)];
+}
+
+template <typename T, unsigned int D>
+inline const T & Lattice<T, D>::operator()(const unsigned int i) const
 {
     return lattice_[i];
 }
 
 template <typename T, unsigned int D>
-inline T & Lattice<T, D>::operator[](const unsigned int i)
+inline T & Lattice<T, D>::operator()(const unsigned int i)
 {
     return lattice_[i];
 }
@@ -251,14 +267,15 @@ void Lattice<T, D>::gatherStart(const unsigned int d)
     {
         const unsigned int pShift  = (layout_->getLocalDim(d) - 1)
                                      *layout_->getPlaneInfo(d).blockSize;
-        const int          ad      = layout_->absDir(d);
+        const int sd               = static_cast<int>(d);
+        const unsigned int ad      = layout_->absDir(d);
         const T            *sendPt = lattice_ + ((d < D) ? 0 : pShift);
 
         MPI_Isend(sendPt, 1, mpiPlaneType_[ad],
-                  layout_->neighborCoord(layout_->oppDir(d)), d,
+                  layout_->neighborCoord(layout_->oppDir(d)), sd,
                   layout_->getDirCommGrid(d), &sReq_[d]);
         MPI_Irecv(commBuffer_[d], 1, mpiBufType_[ad],
-                  layout_->neighborCoord(d), d, layout_->getDirCommGrid(d),
+                  layout_->neighborCoord(d), sd, layout_->getDirCommGrid(d),
                   &rReq_[d]);
     }
 }

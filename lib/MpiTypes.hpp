@@ -38,6 +38,17 @@ public:
     }
 };
 
+// unsigned int
+template <>
+class MpiType<unsigned int>
+{
+public:
+    static void make(MPI_Datatype &type)
+    {
+        MPI_Type_contiguous(1, MPI_UNSIGNED, &type);
+    }
+};
+
 // float
 template <>
 class MpiType<float>

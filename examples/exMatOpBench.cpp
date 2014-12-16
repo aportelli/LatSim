@@ -48,9 +48,9 @@ int main(int argc, char *argv[])
 
     for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
-        x[i].fill(2*static_cast<float>(argc)+i);
-        y[i].fill(3*static_cast<float>(argc)+i);
-        z[i].fill(sin(static_cast<float>(i)*argc));
+        x(i).fill(2*static_cast<float>(argc)+i);
+        y(i).fill(3*static_cast<float>(argc)+i);
+        z(i).fill(sin(static_cast<float>(i)*argc));
     }
     sleep(sleepTime);
     time = layout.time();
@@ -69,9 +69,9 @@ int main(int argc, char *argv[])
     // naive implementation with lattices
     for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
     {
-        x[i].fill(2*static_cast<float>(argc)+i);
-        y[i].fill(3*static_cast<float>(argc)+i);
-        z[i].fill(sin(static_cast<float>(i)*argc));
+        x(i).fill(2*static_cast<float>(argc)+i);
+        y(i).fill(3*static_cast<float>(argc)+i);
+        z(i).fill(sin(static_cast<float>(i)*argc));
     }
     sleep(sleepTime);
     time = layout.time();
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     {
         for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
         {
-            func(z[i], x[i], y[i], z[i]);
+            func(z(i), x(i), y(i), z(i));
         }
     }
     time = layout.time() - time;

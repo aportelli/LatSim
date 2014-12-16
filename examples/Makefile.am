@@ -8,9 +8,14 @@ endif
 endif
 
 noinst_PROGRAMS =           \
+    exIndex                 \
     exMatLibBench           \
     exMatOpBench            \
     exScalOpBench
+
+exIndex_SOURCES  = exIndex.cpp
+exIndex_CXXFLAGS = $(COM_CXXFLAGS)
+exIndex_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exMatLibBench_SOURCES  = exMatLibBench.cpp
 exMatLibBench_CXXFLAGS = $(COM_CXXFLAGS)

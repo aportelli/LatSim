@@ -174,9 +174,8 @@ typedef Mat<double>::Index Index;
 void globalError(const std::string msg, const std::string loc = "");
 
 // Indexing helpers ////////////////////////////////////////////////////////////
-template <unsigned int D>
-inline unsigned int coordToRowMajor(const std::array<unsigned int, D> &x,
-                                    const std::array<unsigned int, D> &dim)
+template <size_t D>
+inline unsigned int coordToRowMajor(const Coord<D> &x, const Coord<D> &dim)
 {
     unsigned int ind;
 
@@ -190,20 +189,20 @@ inline unsigned int coordToRowMajor(const std::array<unsigned int, D> &x,
     return ind;
 }
 
-template <unsigned int D>
-inline std::array<unsigned int, D>
-rowMajorToCoord(const unsigned int ind, const std::array<unsigned int, D> &dim)
+template <size_t D>
+inline Coord<D> rowMajorToCoord(const unsigned int ind, const Coord<D> &dim)
 {
     std::array<unsigned int, D> x;
-    unsigned int                j, dimprod;
+    unsigned int                j, dimprod, ud;
 
     j       = ind;
     dimprod = 1;
     for (int d = D - 1; d >= 0; --d)
     {
-        x[d]     = (j/dimprod)%dim[d];
-        j       -= dimprod*x[d];
-        dimprod *= dim[d];
+        ud       = static_cast<unsigned int>(d);
+        x[ud]    = (j/dimprod)%dim[ud];
+        j       -= dimprod*x[ud];
+        dimprod *= dim[ud];
     }
 
     return x;

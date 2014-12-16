@@ -51,9 +51,9 @@ public:
 };
 
 template <typename T>
-auto strong_inline eval(const unsigned int i, const T &arg)->decltype(arg[i])
+auto strong_inline eval(const unsigned int i, const T &arg)->decltype(arg(i))
 {
-    return arg[i];
+    return arg(i);
 }
 
 template <typename Op, typename... Ts, int... is>
