@@ -20,6 +20,7 @@ libLatSim_la_SOURCES = \
 
 libLatSim_ladir = $(pkgincludedir)
 libLatSim_la_HEADERS = \
+    Expressions.hpp    \
     Global.hpp         \
     Lattice.hpp        \
     Layout.hpp         \
