@@ -41,7 +41,7 @@ void CommBench::run(void)
     time = layout.time() - time;
     sleep(sleepTime);
     nOp = n_*static_cast<float>(layout.getVolume());
-    buf << time << " s, " << nOp << " flop, " << nOp/time << " flop/s 0 Mb/s";
+    buf << time << " s, " << nOp << " flop, " << nOp/time << " flop/s 0 MB/s";
     masterLog(buf.str());
 
     masterLog("* Laplacian...");
@@ -65,7 +65,7 @@ void CommBench::run(void)
     }
     buf.str("");
     buf << time << " s, " << nOp << " flop, " << nOp/time << " flop/s";
-    buf << " " << nComm/time/1024./1024. << " Mb/s";
+    buf << " " << nComm/time/1024./1024. << " MB/s";
     masterLog(buf.str());
     masterLog("* forward finite differences...");
     for (unsigned int d = 0; d < 8; ++d)
@@ -91,7 +91,7 @@ void CommBench::run(void)
         }
         buf.str("");
         buf << time << " s, " << nOp << " flop, " << nOp/time << " flop/s";
-        buf << " " << nComm/time/1024./1024. << " Mb/s";
+        buf << " " << nComm/time/1024./1024. << " MB/s";
         masterLog(buf.str());
     }
 }

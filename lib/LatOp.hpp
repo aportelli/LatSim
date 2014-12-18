@@ -105,7 +105,7 @@ void strong_inline Laplacian<T, D>::eval(Lattice<T, D> &res,
     }
     for (unsigned int d = 0; d < 2*D; ++d)
     {
-        T  cache[cacheSize];
+        T cache[cacheSize];
 
         for (unsigned int i = 0; i < localVol; i += cacheSize)
         {
