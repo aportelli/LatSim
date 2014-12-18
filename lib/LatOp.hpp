@@ -47,24 +47,11 @@ template <typename Lat>
 void strong_inline ForwardDiff<Lat>::eval(Lat &res, Lat &arg) const
 {
     const unsigned int     localVol = arg.getLayout().getLocalVolume();
-    constexpr unsigned int cacheSize = 1024;
-    unsigned int           endIndex;
-    typename Lat::SiteType cache[cacheSize];
 
-    arg.gatherStart(dir_);
-    res = arg;
-    arg.gatherWait(dir_);
-    for (unsigned int i = 0; i < localVol; i += cacheSize)
+    arg.gather(dir_);
+    for (unsigned int i = 0; i < localVol; ++i)
     {
-        endIndex = (i + cacheSize < localVol) ? cacheSize : (localVol - i - 1);
-        for (unsigned int j = 0; j < endIndex; ++j)
-        {
-            cache[j] = arg(j, dir_);
-        }
-        for (unsigned int j = 0; j < endIndex; ++j)
-        {
-            res(j) -= cache[j];
-        }
+        res(i) = arg(i, dir_) - arg(i);
     }
 }
 
@@ -87,38 +74,18 @@ template <typename T, unsigned int D>
 void strong_inline Laplacian<T, D>::eval(Lattice<T, D> &res,
                                          Lattice<T, D> &arg) const
 {
-    const unsigned int     localVol = arg.getLayout().getLocalVolume();
-    unsigned int           endIndex;
-    constexpr unsigned int cacheSize = 1024;
+    const unsigned int localVol = arg.getLayout().getLocalVolume();
 
     for (unsigned int d = 0; d < 2*D; ++d)
     {
-        arg.gatherStart(d);
+        arg.gather(d);
     }
     for (unsigned int i = 0; i < localVol; ++i)
     {
         res(i) = -2u*D*arg(i);
-    }
-    for (unsigned int d = 0; d < 2*D; ++d)
-    {
-        arg.gatherWait(d);
-    }
-    for (unsigned int d = 0; d < 2*D; ++d)
-    {
-        T cache[cacheSize];
-
-        for (unsigned int i = 0; i < localVol; i += cacheSize)
+        for (unsigned int d = 0; d < 2*D; ++d)
         {
-            endIndex = (i + cacheSize < localVol) ? cacheSize
-                                                  : (localVol - i - 1);
-            for (unsigned int j = 0; j < endIndex; ++j)
-            {
-                cache[j] = arg(j, d);
-            }
-            for (unsigned int j = 0; j < endIndex; ++j)
-            {
-                res(j) += cache[j];
-            }
+            res(i) += arg(i, d);
         }
     }
 }
