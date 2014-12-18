@@ -49,6 +49,8 @@ public:
     inline const T & operator()(const unsigned int i,
                                 const unsigned int d) const;
     inline T &       operator()(const unsigned int i, const unsigned int d);
+    // layout access
+    const Layout<D> & getLayout(void);
     // directional gathering
     //// non-blocking
     void gatherStart(const unsigned int d);
@@ -56,13 +58,19 @@ public:
     //// blocking
     void gather(const unsigned int d);
     // assignement operator
-    Lattice<T, D> & operator=(Lattice<T, D> l);
+    Lattice<T, D> & operator=(const Lattice<T, D> &l);
     // expression evaluation
     template <typename Op, typename... Ts>
     inline Lattice<T, D> & operator=(const LatExpr<Op, Ts...> &expr) flatten;
+    template <typename Op>
+    inline Lattice<T, D> &
+    operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) flatten;
+    // dump to stdout
+    void dump(void);
 private:
     // helpers for constructors/destructor
     void reallocate(const LayoutObject *layout = globalLayout);
+    void copy(const Lattice<T, D> &l);
     void clear(void);
     void swap(Lattice<T, D> &l);
     void createMpiTypes(void);
@@ -142,6 +150,22 @@ void Lattice<T, D>::clear(void)
 }
 
 template <typename T, unsigned int D>
+void Lattice<T, D>::copy(const Lattice<T, D> &rhs)
+{
+    if (this != &rhs)
+    {
+        const unsigned int size = rhs.layout_->getLocalVolume();
+
+        if (layout_ != rhs.layout_)
+        {
+            reallocate(rhs.layout_);
+            createMpiTypes();
+        }
+        std::copy(rhs.lattice_, rhs.lattice_ + size, lattice_);
+    }
+}
+
+template <typename T, unsigned int D>
 void Lattice<T, D>::swap(Lattice<T, D> &l)
 {
     using std::swap;
@@ -204,25 +228,13 @@ template <typename T, unsigned int D>
 Lattice<T, D>::Lattice(const Lattice<T, D> &rhs)
 : Lattice(nullptr)
 {
-    masterLog("copy constructor");
-    if (this != &rhs)
-    {
-        const unsigned int size = rhs.layout_->getLocalVolume();
-
-        if (layout_ != rhs.layout_)
-        {
-            reallocate(rhs.layout_);
-        }
-        std::copy(rhs.lattice_, rhs.lattice_ + size, lattice_);
-        createMpiTypes();
-    }
+    copy(rhs);
 }
 
 template <typename T, unsigned int D>
 Lattice<T, D>::Lattice(Lattice<T, D> &&rhs)
 : Lattice(nullptr)
 {
-    masterLog("move constructor");
     this->swap(rhs);
 }
 
@@ -234,6 +246,18 @@ Lattice<T, D>::~Lattice(void)
 }
 
 // local site access ///////////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+inline const T & Lattice<T, D>::operator()(const unsigned int i) const
+{
+    return lattice_[i];
+}
+
+template <typename T, unsigned int D>
+inline T & Lattice<T, D>::operator()(const unsigned int i)
+{
+    return lattice_[i];
+}
+
 template <typename T, unsigned int D>
 inline const T & Lattice<T, D>::operator()(const unsigned int i,
                                            const unsigned int d) const
@@ -247,16 +271,11 @@ inline T & Lattice<T, D>::operator()(const unsigned int i, const unsigned int d)
     return lattice_[layout_->getNearNeigh(i, d)];
 }
 
+// layout access ///////////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
-inline const T & Lattice<T, D>::operator()(const unsigned int i) const
+const Layout<D> & Lattice<T, D>::getLayout(void)
 {
-    return lattice_[i];
-}
-
-template <typename T, unsigned int D>
-inline T & Lattice<T, D>::operator()(const unsigned int i)
-{
-    return lattice_[i];
+    return *layout_;
 }
 
 // directional gathering ///////////////////////////////////////////////////////
@@ -299,9 +318,9 @@ void Lattice<T, D>::gather(const unsigned int d)
 
 // assignement operator ////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
-Lattice<T, D> & Lattice<T, D>::operator=(Lattice<T, D> l)
+Lattice<T, D> & Lattice<T, D>::operator=(const Lattice<T, D> &l)
 {
-    this->swap(l);
+    copy(l);
 
     return *this;
 }
@@ -318,6 +337,36 @@ Lattice<T, D>::operator=(const LatExpr<Op, Ts...> &expr) flatten
     }
 
     return *this;
+}
+
+template <typename T, unsigned int D>
+template <typename Op>
+inline Lattice<T, D> &
+Lattice<T, D>::operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) flatten
+{
+    expr.first.eval(*this, expr.second);
+
+    return *this;
+}
+
+// dump to stdout
+template <typename T, unsigned int D>
+void Lattice<T, D>::dump(void)
+{
+    std::string buf;
+    Coord<D>    x;
+
+    for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
+    {
+        x   = rowMajorToCoord(i, layout_->getLocalDim());
+        buf = "[";
+        for (unsigned int d = 0; d < D; ++d)
+        {
+            buf += strFrom(x[d]) + ((d == D - 1) ? "" : ", ");
+        }
+        buf += "](" + strFrom(i) + ")= " + strFrom((*this)(i));
+        masterLog(buf);
+    }
 }
 
 END_NAMESPACE

@@ -62,6 +62,7 @@ public:
     unsigned int      getCommBufferSize(void) const;
     unsigned int      getNearNeigh(const unsigned int i,
                                    const unsigned int d) const;
+    const unsigned int * getNearNeigh(const unsigned int d) const;
     const PlaneInfo & getPlaneInfo(const unsigned int d) const;
     const MPI_Comm &  getCommGrid(void) const;
     const MPI_Comm &  getDirCommGrid(const unsigned int d) const;
@@ -363,6 +364,12 @@ unsigned int Layout<D>::getNearNeigh(const unsigned int i,
                                      const unsigned int d) const
 {
     return nnTable_[d].get()[i];
+}
+
+template <unsigned int D>
+const unsigned int * Layout<D>::getNearNeigh(const unsigned int d) const
+{
+    return nnTable_[d].get();
 }
 
 template <unsigned int D>

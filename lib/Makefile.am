@@ -24,6 +24,7 @@ libLatSim_la_HEADERS = \
     Global.hpp         \
     Lattice.hpp        \
     Layout.hpp         \
+    LatOp.hpp          \
     Logger.hpp         \
     MpiTypes.hpp    
 

@@ -35,6 +35,9 @@ public:
     using std::tuple<Op, Ts...>::tuple;
 };
 
+template <typename Op, typename Lat>
+using LatOpExpr = std::pair<Op, Lat &>;
+
 BEGIN_EXPR_NAMESPACE
 
 template<int... is>

@@ -11,6 +11,7 @@ noinst_PROGRAMS =           \
     exIndex                 \
     exMatLibBench           \
     exMatOpBench            \
+    exScalCommBench         \
     exScalOpBench
 
 exIndex_SOURCES  = exIndex.cpp
@@ -24,6 +25,10 @@ exMatLibBench_LDFLAGS  = -L../lib/.libs -lLatSim
 exMatOpBench_SOURCES  = exMatOpBench.cpp
 exMatOpBench_CXXFLAGS = $(COM_CXXFLAGS)
 exMatOpBench_LDFLAGS  = -L../lib/.libs -lLatSim
+
+exScalCommBench_SOURCES  = exScalCommBench.cpp
+exScalCommBench_CXXFLAGS = $(COM_CXXFLAGS)
+exScalCommBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exScalOpBench_SOURCES  = exScalOpBench.cpp
 exScalOpBench_CXXFLAGS = $(COM_CXXFLAGS)
