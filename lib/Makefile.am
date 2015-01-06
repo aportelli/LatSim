@@ -19,14 +19,17 @@ libLatSim_la_SOURCES = \
     includes.hpp
 
 libLatSim_ladir = $(pkgincludedir)
-libLatSim_la_HEADERS = \
-    Expressions.hpp    \
-    Global.hpp         \
-    Lattice.hpp        \
-    Layout.hpp         \
-    LatOp.hpp          \
-    Logger.hpp         \
-    MpiTypes.hpp    
+libLatSim_la_HEADERS =    \
+    Expressions.hpp       \
+    Global.hpp            \
+    Integrator.hpp        \
+    Lattice.hpp           \
+    Layout.hpp            \
+    LatOp.hpp             \
+    Logger.hpp            \
+    MpiTypes.hpp          \
+    OmelyanIntegrator.hpp \
+    VerletIntegrator.hpp
 
 libLatSim_la_CXXFLAGS = $(COM_CXXFLAGS)
 

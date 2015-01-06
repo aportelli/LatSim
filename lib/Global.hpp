@@ -23,6 +23,7 @@
 #include <array>
 #include <complex>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -164,7 +165,7 @@ template <typename Derived>
 using ConstMap = Eigen::Map<const Derived>;
 
 // Index type //////////////////////////////////////////////////////////////////
-typedef Mat<double>::Index Index;
+typedef Mat<double>::Index MatIndex;
 
 // Error handling //////////////////////////////////////////////////////////////
 #define SRC_LOC strFrom(__FUNCTION__) + " at " + strFrom(__FILE__) + ":"\
@@ -282,7 +283,7 @@ inline DVec strTo<DVec>(const std::string &str)
         stream >> buf;
         vbuf.push_back(buf);
     }
-    res = Map<DVec>(vbuf.data(), static_cast<Index>(vbuf.size()));
+    res = Map<DVec>(vbuf.data(), static_cast<MatIndex>(vbuf.size()));
     
     return res;
 }
@@ -300,7 +301,7 @@ inline IVec strTo<IVec>(const std::string &str)
         stream >> buf;
         vbuf.push_back(buf);
     }
-    res = Map<IVec>(vbuf.data(), static_cast<Index>(vbuf.size()));
+    res = Map<IVec>(vbuf.data(), static_cast<MatIndex>(vbuf.size()));
     
     return res;
 }
