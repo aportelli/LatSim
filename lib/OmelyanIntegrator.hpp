@@ -1,7 +1,7 @@
 /*
  * OmelyanIntegrator.hpp, part of LatSim
  *
- * Copyright (C) 2014 Antonin Portelli
+ * Copyright (C) 2014-2015 Antonin Portelli
  *
  * LatSim is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
