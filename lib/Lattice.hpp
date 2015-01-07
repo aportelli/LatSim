@@ -288,7 +288,7 @@ void Lattice<T, D>::gatherStart(const unsigned int d)
                                      *layout_->getPlaneInfo(d).blockSize;
         const int sd               = static_cast<int>(d);
         const unsigned int ad      = layout_->absDir(d);
-        const T            *sendPt = lattice_ + ((d < D) ? 0 : pShift);
+        T                  *sendPt = lattice_ + ((d < D) ? 0 : pShift);
 
         MPI_Isend(sendPt, 1, mpiPlaneType_[ad],
                   layout_->neighborCoord(layout_->oppDir(d)), sd,
