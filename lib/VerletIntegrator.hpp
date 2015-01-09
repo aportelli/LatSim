@@ -40,7 +40,7 @@ public:
     virtual ~VerletIntegrator(void) = default;
     // molecular dynamic evolution
     virtual void evolve(Fs &... fields, const double step,
-                        const unsigned int nStep);
+                        const unsigned int nStep) const;
 };
 
 /******************************************************************************
@@ -54,7 +54,7 @@ VerletIntegrator<Fs...>::VerletIntegrator(const EvolFunc &moveFields,
 
 template <typename... Fs>
 void VerletIntegrator<Fs...>::evolve(Fs &... fields, const double step,
-                                     const unsigned int nStep)
+                                     const unsigned int nStep) const
 {
     for (unsigned int i = 0; i < nStep; ++i)
     {

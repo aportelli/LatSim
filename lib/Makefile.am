@@ -22,12 +22,14 @@ libLatSim_ladir = $(pkgincludedir)
 libLatSim_la_HEADERS =    \
     Expressions.hpp       \
     Global.hpp            \
+    Hmc.hpp               \
     Integrator.hpp        \
     Lattice.hpp           \
     Layout.hpp            \
     LatOp.hpp             \
     Logger.hpp            \
     MpiTypes.hpp          \
+    Phi4.hpp              \
     OmelyanIntegrator.hpp \
     VerletIntegrator.hpp
 

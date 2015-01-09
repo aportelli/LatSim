@@ -65,7 +65,8 @@
 #define DEBUG_MAT(m) std::cout << #m << "=\n" << m << std::endl
 
 // attribute to switch off unused warnings with gcc
-#ifndef __GNUC__
+#if (!defined(__GNUC__))||\
+    (defined(__clang__)&&(__clang_major__ <= 3)&&(__clang_minor__ <= 4))
 #define __unused
 #endif
 

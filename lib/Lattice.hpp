@@ -49,6 +49,8 @@ public:
     inline const T & operator()(const unsigned int i,
                                 const unsigned int d) const;
     inline T &       operator()(const unsigned int i, const unsigned int d);
+    // filling function
+    void fill(const T &x);
     // layout access
     const Layout<D> & getLayout(void);
     // directional gathering
@@ -76,7 +78,7 @@ private:
     void createMpiTypes(void);
 private:
     const Layout<D>              *layout_;
-    std::unique_ptr<T>           data_;
+    std::unique_ptr<T[]>         data_;
     T                            *lattice_;
     std::array<T *, 2*D>         commBuffer_;
     bool                         mpiTypesInit_;
@@ -103,6 +105,10 @@ DEFINE_OP(operator+, Add)
 DEFINE_OP(operator-, Sub)
 DEFINE_OP(operator*, Mul)
 DEFINE_OP(operator/, Div)
+
+// useful loop macro
+#define FOR_SITE(l, i)\
+for (unsigned int i = 0; i < (l).getLayout().getLocalVolume(); ++i)
 
 /******************************************************************************
  *                          Lattice implementation                            *
@@ -269,6 +275,16 @@ template <typename T, unsigned int D>
 inline T & Lattice<T, D>::operator()(const unsigned int i, const unsigned int d)
 {
     return lattice_[layout_->getNearNeigh(i, d)];
+}
+
+// filling function ////////////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+void Lattice<T, D>::fill(const T &x)
+{
+    FOR_SITE(*this, i)
+    {
+        (*this)(i) = x;
+    }
 }
 
 // layout access ///////////////////////////////////////////////////////////////

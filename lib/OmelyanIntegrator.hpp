@@ -42,9 +42,7 @@ public:
     virtual ~OmelyanIntegrator(void) = default;
     // molecular dynamic evolution
     virtual void evolve(Fs &... fields, const double step,
-                        const unsigned int nStep);
-private:
-
+                        const unsigned int nStep) const;
 };
 
 /******************************************************************************
@@ -58,7 +56,7 @@ OmelyanIntegrator<Fs...>::OmelyanIntegrator(const EvolFunc &moveFields,
 
 template <typename... Fs>
 void OmelyanIntegrator<Fs...>::evolve(Fs &... fields, const double step,
-                                      const unsigned int nStep)
+                                      const unsigned int nStep) const
 {
     for (unsigned int i = 0; i < nStep; ++i)
     {

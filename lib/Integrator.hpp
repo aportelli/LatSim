@@ -43,7 +43,7 @@ public:
     void moveMoms(Fs &... fields, const double step) const;
     // molecular dynamic evolution
     virtual void evolve(Fs &... fields, const double step,
-                        const unsigned int nStep) = 0;
+                        const unsigned int nStep) const = 0;
 private:
     EvolFunc moveFields_, moveMoms_;
 };
