@@ -198,8 +198,8 @@ inline unsigned int coordToRowMajor(const Coord<D> &x, const Coord<D> &dim)
 template <size_t D>
 inline Coord<D> rowMajorToCoord(const unsigned int ind, const Coord<D> &dim)
 {
-    std::array<unsigned int, D> x;
-    unsigned int                j, dimprod, ud;
+    Coord<D>     x;
+    unsigned int j, dimprod, ud;
 
     j       = ind;
     dimprod = 1;

@@ -44,13 +44,13 @@ int main(int argc, char *argv[])
 
     registerGlobalLayout(layout);
 
-    MoveMom<D>                         moveMom(param);
-    Hamiltonian<D>                     h(param);
+    MoveMom<D>                          moveMom(param);
+    Hamiltonian<D>                      h(param);
     OmelyanIntegrator<LScalar, LScalar> integrator(moveField<D>, moveMom);
-    Hmc<LScalar, LScalar>              hmc(h, momGen<D>, integrator, nStep);
-    LScalar                            phi, pi;
+    Hmc<LScalar, LScalar>               hmc(h, momGen<D>, integrator, nStep);
+    LScalar                             phi, pi;
 
-    phi.fill(1.0);
+    phi.fill(0.0);
     for (unsigned int t = 0; t < nTraj; ++t)
     {
         double phiAv, locSum = 0.;

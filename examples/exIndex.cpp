@@ -61,8 +61,8 @@ int main(void)
             cout << "-- NEIGHBOUR IN DIRECTION " << d << endl;
             for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
             {
-                x      = rowMajorToCoord(i, ld);
-                xn     = rowMajorToCoord(lat(i, d), ld);
+                x  = rowMajorToCoord(i, ld);
+                xn = rowMajorToCoord(lat(i, d), ld);
                 cout << "lat([";
                 for (unsigned int d = 0; d < 4; ++d)
                 {
