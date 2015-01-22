@@ -58,6 +58,7 @@ public:
     virtual ~Layout(void);
     // access
     unsigned int         getRank(void) const;
+    unsigned int         getNProcess(void) const;
     const Coord<D> &     getDim(void) const;
     unsigned int         getDim(const unsigned int d) const;
     const Coord<D> &     getLocalDim(void) const;
@@ -82,6 +83,9 @@ public:
     static unsigned int oppDir(const unsigned int d);
     // get neighbor coordinate in the grid
     int neighborCoord(const unsigned int d) const;
+    // get global coordinates
+    Coord<D> getCoord(const unsigned int i) const;
+    Coord<D> getLocalCoord(const unsigned int i) const;
     // need communication in direction d?
     bool needComm(const unsigned d) const;
     // clock
@@ -90,7 +94,7 @@ public:
     void generateSeed(void);
     void initializeRng(void);
 private:
-    int                                              rank_;
+    int                                              rank_, nProc_;
     unsigned int                                     volume_, locVolume_;
     unsigned int                                     commBufferSize_;
     std::array<int, D>                               p_, coord_;
@@ -122,7 +126,7 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
 : Logger("Layout")
 , dim_(dim)
 {
-    int          size, isInit, nproc = 1, isPeriodic[D], isActive[D];
+    int          isInit, nProc = 1, isPeriodic[D], isActive[D];
     unsigned int shift = 0;
     std::string  buf;
 
@@ -166,15 +170,16 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
                            strFrom(p_[d]) + ") in direction " + strFrom(d));
         }
     }
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProc_);
     for (unsigned int d = 0; d < D; ++d)
     {
-        nproc *= p_[d];
+        nProc *= p_[d];
     }
-    if (nproc != size)
+    if (nProc != nProc_)
     {
-        locGlobalError("layout number of processes (" + strFrom(nproc) +
-                       ") does not match the real one (" + strFrom(size) + ")");
+        locGlobalError("layout number of processes (" + strFrom(nProc) +
+                       ") does not match the real one (" + strFrom(nProc_) +
+                       ")");
     }
 
     // compute volumes and surfaces
@@ -224,6 +229,7 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
         MPI_Cart_sub(commGrid_, isActive, &dirCommGrid_[d]);
     }
     MPI_Comm_rank(commGrid_, &rank_);
+
     MPI_Cart_coords(commGrid_, rank_, D, coord_.data());
 
     // compute plane communication informations
@@ -316,6 +322,12 @@ template <unsigned int D>
 unsigned int Layout<D>::getRank(void) const
 {
     return static_cast<unsigned int>(rank_);
+}
+
+template <unsigned int D>
+unsigned int Layout<D>::getNProcess(void) const
+{
+    return static_cast<unsigned int>(nProc_);
 }
 
 template <unsigned int D>
@@ -455,6 +467,31 @@ int Layout<D>::neighborCoord(const unsigned int d) const
     
     return (d < D) ? ((coord_[ad] + 1)          % p_[ad])
                    : ((coord_[ad] + p_[ad] - 1) % p_[ad]);
+}
+
+// get coordinates /////////////////////////////////////////////////////////////
+template <unsigned int D>
+Coord<D> Layout<D>::getLocalCoord(const unsigned int i) const
+{
+    Coord<D> x;
+
+    x = rowMajorToCoord(i, locDim_);
+
+    return x;
+}
+
+template <unsigned int D>
+Coord<D> Layout<D>::getCoord(const unsigned int i) const
+{
+    Coord<D> x;
+
+    x = getLocalCoord(i);
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        x[d] += getLocalDim(d)*static_cast<unsigned int>(coord_[d]);
+    }
+
+    return x;
 }
 
 // need communication in direction d? //////////////////////////////////////////

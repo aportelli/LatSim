@@ -69,6 +69,11 @@ public:
     operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) flatten;
     // dump to stdout
     void dump(void);
+    // reduction
+    T reduce(const T &x, std::function<T(const Vec<T> &buf)> &f);
+    T reduceSum(const T &x);
+    // lattice integration
+    double sum(void);
 private:
     // helpers for constructors/destructor
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -81,6 +86,7 @@ private:
     std::unique_ptr<T[]>         data_;
     T                            *lattice_;
     std::array<T *, 2*D>         commBuffer_;
+    Vec<T>                       reduceBuffer_;
     bool                         mpiTypesInit_;
     MPI_Datatype                 mpiElemType_;
     std::array<MPI_Datatype, D>  mpiBufType_, mpiPlaneType_;
@@ -131,6 +137,7 @@ void Lattice<T, D>::reallocate(const LayoutObject *layout)
     {
         commBuffer_[d] = commBuffer_[d-1] + layout_->getLocalSurface(d);
     }
+    reduceBuffer_.resize(static_cast<MatIndex>(layout_->getNProcess()));
 }
 
 template <typename T, unsigned int D>
@@ -365,7 +372,7 @@ Lattice<T, D>::operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) flatten
     return *this;
 }
 
-// dump to stdout
+// dump to stdout //////////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
 void Lattice<T, D>::dump(void)
 {
@@ -383,6 +390,41 @@ void Lattice<T, D>::dump(void)
         buf += "](" + strFrom(i) + ")= " + strFrom((*this)(i));
         masterLog(buf);
     }
+}
+
+// reduction ///////////////////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+T Lattice<T, D>::reduce(const T &x, std::function<T(const Vec<T> &buf)> &f)
+{
+    MPI_Allgather(&x, 1, mpiElemType_, reduceBuffer_.data(), 1, mpiElemType_,
+                  layout_->getCommGrid());
+
+    return f(reduceBuffer_);
+}
+
+template <typename T, unsigned int D>
+T Lattice<T, D>::reduceSum(const T &x)
+{
+    std::function<T(const Vec<T> &buf)> sum;
+
+    sum = [](const Vec<T> &buf)->T{return buf.sum();};
+
+    return reduce(x, sum);
+}
+
+// lattice integration /////////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+double Lattice<T, D>::sum(void)
+{
+    T localSum;
+
+    localSum = (*this)(0) - (*this)(0);
+    FOR_SITE(*this, i)
+    {
+        localSum += (*this)(i);
+    }
+
+    return reduceSum(localSum);
 }
 
 END_NAMESPACE
