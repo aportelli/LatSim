@@ -128,6 +128,9 @@ template <int size>
 using SIVec = Vec<int, size>;
 
 template <int size>
+using SUVec = Vec<unsigned int, size>;
+
+template <int size>
 using SFVec = Vec<float, size>;
 
 template <int size>
@@ -137,6 +140,7 @@ template <int size>
 using SCVec = Vec<std::complex<double>, size>;
 
 typedef SIVec<dynamic> IVec;
+typedef SUVec<dynamic> UVec;
 typedef SDVec<dynamic> DVec;
 typedef SCVec<dynamic> CVec;
 
@@ -304,6 +308,24 @@ inline IVec strTo<IVec>(const std::string &str)
     }
     res = Map<IVec>(vbuf.data(), static_cast<MatIndex>(vbuf.size()));
     
+    return res;
+}
+
+template<>
+inline UVec strTo<UVec>(const std::string &str)
+{
+    UVec                      res;
+    std::vector<unsigned int> vbuf;
+    unsigned int              buf;
+    std::istringstream        stream(str);
+
+    while (!stream.eof())
+    {
+        stream >> buf;
+        vbuf.push_back(buf);
+    }
+    res = Map<UVec>(vbuf.data(), static_cast<MatIndex>(vbuf.size()));
+
     return res;
 }
 
