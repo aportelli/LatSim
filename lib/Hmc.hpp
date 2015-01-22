@@ -43,7 +43,7 @@ public:
     // constructor
     Hmc(const Functional &hamiltonian, const MomGenFunc &momGen,
         const Integrator &integrator, const unsigned trajNStep,
-        const double trajLength = 1.);
+        const unsigned int trajPretherm = 50, const double trajLength = 1.);
     // destructor
     virtual ~Hmc(void) = default;
     // HMC step
@@ -60,7 +60,7 @@ private:
     MomGenFunc                             momGen_;
     const Integrator                       &integrator_;
     unsigned int                           trajCount_{0}, trajNStep_;
-    unsigned int                           tryCount_{0};
+    unsigned int                           tryCount_{0}, trajPreTherm_;
     double                                 trajStep_, trajLength_, expDH_{0.};
     std::tuple<Fs...>                      initFields_;
     std::mt19937                           gen_;
@@ -74,12 +74,13 @@ private:
 template <typename... Fs>
 Hmc<Fs...>::Hmc(const Functional &hamiltonian, const MomGenFunc &momGen,
                 const Integrator &integrator, const unsigned trajNStep,
-                const double trajLength)
+                const unsigned int trajPretherm, const double trajLength)
 : Logger("HMC")
 , hamiltonian_(hamiltonian)
 , momGen_(momGen)
 , integrator_(integrator)
 , trajNStep_(trajNStep)
+, trajPreTherm_(trajPretherm)
 , trajStep_(trajLength/static_cast<double>(trajNStep))
 , trajLength_(trajLength)
 , lin_(0., 1.)
@@ -96,7 +97,8 @@ Hmc<Fs...>::Hmc(const Functional &hamiltonian, const MomGenFunc &momGen,
 template <typename... Fs>
 bool Hmc<Fs...>::update(Fs &... fields)
 {
-    double dH, localDH;
+    double      dH, localDH;
+    std::string msg;
 
     // save initial fields
     initFields_ = std::tuple<Fs &...>(fields...);
@@ -115,18 +117,31 @@ bool Hmc<Fs...>::update(Fs &... fields)
     localDH = hamiltonian_(fields...) - localDH;
     MPI_Allreduce(&localDH, &dH, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     masterLog("exp(-DH)= " + strFrom(exp(-dH)));
-    tryCount_++;
+    msg  = "attempt " + strFrom(tryCount_);
+    msg += (trajCount_ < trajPreTherm_) ? " (pre-thermalization)" : "";
     if (accept(dH))
     {
-        masterLog("trajectory " + strFrom(trajCount_) + " accepted");
-        expDH_ += exp(-dH);
+        msg += ": trajectory " + strFrom(trajCount_) + " accepted";
+        masterLog(msg);
+        tryCount_++;
         trajCount_++;
+        if (trajCount_ == trajPreTherm_)
+        {
+            masterLog("pre-thermalization done");
+            tryCount_ = 0;
+        }
+        else if (trajCount_ > trajPreTherm_)
+        {
+            expDH_ += exp(-dH);
+        }
         
         return true;
     }
     else
     {
-        masterLog("trajectory " + strFrom(trajCount_) + " rejected");
+        tryCount_++;
+        msg += ": trajectory " + strFrom(trajCount_) + " rejected";
+        masterLog(msg);
         std::tie(fields...) = initFields_;
 
         return false;
@@ -137,20 +152,23 @@ bool Hmc<Fs...>::update(Fs &... fields)
 template <typename... Fs>
 double Hmc<Fs...>::getExpDH(void) const
 {
-    return expDH_/static_cast<double>(trajCount_);
+    return expDH_/static_cast<double>(trajCount_-trajPreTherm_);
 }
 
 template <typename... Fs>
 double Hmc<Fs...>::getAcceptRate(void) const
 {
-    return static_cast<double>(trajCount_)/static_cast<double>(tryCount_);
+    return static_cast<double>(trajCount_-trajPreTherm_)/static_cast<double>(tryCount_);
 }
 
 template <typename... Fs>
 void Hmc<Fs...>::printStat(void) const
 {
-    masterLog("<exp(-DH)>     = " + strFrom(getExpDH()));
-    masterLog("acceptance rate= " + strFrom(getAcceptRate()));
+    if (trajCount_ > trajPreTherm_)
+    {
+        masterLog("<exp(-DH)>     = " + strFrom(getExpDH()));
+        masterLog("acceptance rate= " + strFrom(getAcceptRate()));
+    }
 }
 
 // accept-reject ///////////////////////////////////////////////////////////////
