@@ -31,8 +31,13 @@ const string Env::msgPrefix = "[" + strFrom(PACKAGE_NAME) + " v"
 
 void LatSim::globalError(const string msg, const string loc)
 {
-    int rank;
+    int rank, isInit;
 
+    MPI_Initialized(&isInit);
+    if (!isInit)
+    {
+        MPI_Init(0, nullptr);
+    }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0)
     {

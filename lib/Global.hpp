@@ -169,9 +169,9 @@ using ConstMap = Eigen::Map<const Derived>;
 typedef Mat<double>::Index MatIndex;
 
 // Error handling //////////////////////////////////////////////////////////////
-#define SRC_LOC strFrom(__FUNCTION__) + " at " + strFrom(__FILE__) + ":"\
-                + strFrom(__LINE__)
-#define locGlobalError(msg) globalError(msg, SRC_LOC)
+#define SRC_LOC LatSim::strFrom(__FUNCTION__) + " at " +\
+                LatSim::strFrom(__FILE__) + ":" + LatSim::strFrom(__LINE__)
+#define locGlobalError(msg) LatSim::globalError(msg, SRC_LOC)
 
 void globalError(const std::string msg, const std::string loc = "");
 
