@@ -57,24 +57,28 @@ public:
     // destructor
     virtual ~Layout(void);
     // access
-    unsigned int         getRank(void) const;
-    unsigned int         getNProcess(void) const;
-    const Coord<D> &     getDim(void) const;
-    unsigned int         getDim(const unsigned int d) const;
-    const Coord<D> &     getLocalDim(void) const;
-    unsigned int         getLocalDim(const unsigned int d) const;
-    const Coord<D> &     getLocalSurface(void) const;
-    unsigned int         getLocalSurface(const unsigned int d) const;
-    unsigned int         getVolume(void) const;
-    unsigned int         getLocalVolume(void) const;
-    unsigned int         getCommBufferSize(void) const;
-    unsigned int         getNearNeigh(const unsigned int i,
-                                      const unsigned int d) const;
-    const unsigned int * getNearNeigh(const unsigned int d) const;
-    const PlaneInfo &    getPlaneInfo(const unsigned int d) const;
-    const MPI_Comm &     getCommGrid(void) const;
-    const MPI_Comm &     getDirCommGrid(const unsigned int d) const;
-    RngType &            getRng(const unsigned int i) const;
+    unsigned int               getRank(const std::array<int, D> &procCoord) const;
+    unsigned int               getSiteRank(const Coord<D> &x) const;
+    unsigned int               getMyRank(void) const;
+    const std::array<int, D> & getProcessCoord(void) const;
+    unsigned int               getNProcess(void) const;
+    const Coord<D> &           getDim(void) const;
+    unsigned int               getDim(const unsigned int d) const;
+    const Coord<D> &           getLocalDim(void) const;
+    unsigned int               getLocalDim(const unsigned int d) const;
+    const Coord<D> &           getLocalSurface(void) const;
+    unsigned int               getLocalSurface(const unsigned int d) const;
+    unsigned int               getVolume(void) const;
+    unsigned int               getLocalVolume(void) const;
+    unsigned int               getCommBufferSize(void) const;
+    const Coord<D> &           getFirstSite(void) const;
+    unsigned int               getNearNeigh(const unsigned int i,
+                                            const unsigned int d) const;
+    const unsigned int *       getNearNeigh(const unsigned int d) const;
+    const PlaneInfo &          getPlaneInfo(const unsigned int d) const;
+    const MPI_Comm &           getCommGrid(void) const;
+    const MPI_Comm &           getDirCommGrid(const unsigned int d) const;
+    RngType &                  getRng(const unsigned int i) const;
     // check
     static void checkDir(const unsigned int d);
     // get absolute direction
@@ -83,9 +87,12 @@ public:
     static unsigned int oppDir(const unsigned int d);
     // get neighbor coordinate in the grid
     int neighborCoord(const unsigned int d) const;
-    // get global coordinates
-    Coord<D> getCoord(const unsigned int i) const;
-    Coord<D> getLocalCoord(const unsigned int i) const;
+    // test if site is local
+    bool isLocal(const Coord<D> &x);
+    // get coordinates
+    Coord<D>     getCoord(const unsigned int i) const;
+    Coord<D>     getLocalCoord(const unsigned int i) const;
+    unsigned int getIndex(const Coord<D> &x) const;
     // need communication in direction d?
     bool needComm(const unsigned d) const;
     // clock
@@ -97,9 +104,10 @@ private:
     int                                              rank_, nProc_;
     unsigned int                                     volume_, locVolume_;
     unsigned int                                     commBufferSize_;
-    std::array<int, D>                               p_, coord_;
+    std::array<int, D>                               p_, procCoord_;
     std::array<bool, D>                              needComm_;
     Coord<D>                                         locSurface_, dim_, locDim_;
+    Coord<D>                                         firstSite_;
     MPI_Comm                                         commGrid_;
     std::array<MPI_Comm, D>                          dirCommGrid_;
     std::array<PlaneInfo, D>                         planeInfo_;
@@ -229,8 +237,11 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
         MPI_Cart_sub(commGrid_, isActive, &dirCommGrid_[d]);
     }
     MPI_Comm_rank(commGrid_, &rank_);
-
-    MPI_Cart_coords(commGrid_, rank_, D, coord_.data());
+    MPI_Cart_coords(commGrid_, rank_, D, procCoord_.data());
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        firstSite_[d] = static_cast<unsigned int>(procCoord_[d])*locDim_[d];
+    }
 
     // compute plane communication informations
     planeInfo_[0].nBlocks   = 1;
@@ -304,6 +315,14 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     generateSeed();
     initializeRng();
 
+    // print node coordinates
+    buf = "[";
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        buf += strFrom(procCoord_[d]) + ((d == D-1) ? "]" : ", ");
+    }
+    nodeLog("MPI grid position: " + buf);
+
     // everything is ok
     masterLog("communication grid ready");
 }
@@ -319,9 +338,38 @@ Layout<D>::~Layout(void)
 
 // access //////////////////////////////////////////////////////////////////////
 template <unsigned int D>
-unsigned int Layout<D>::getRank(void) const
+unsigned int Layout<D>::getRank(const std::array<int, D> &procCoord) const
+{
+    int rank;
+
+    MPI_Cart_rank(commGrid_, procCoord.data(), &rank);
+
+    return static_cast<unsigned int>(rank);
+}
+
+template <unsigned int D>
+unsigned int Layout<D>::getSiteRank(const Coord<D> &x) const
+{
+    std::array<int, D> procCoord;
+
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        procCoord[d] = static_cast<int>(x[d]/locDim_[d]);
+    }
+
+    return getRank(procCoord);
+}
+
+template <unsigned int D>
+unsigned int Layout<D>::getMyRank(void) const
 {
     return static_cast<unsigned int>(rank_);
+}
+
+template <unsigned int D>
+const std::array<int, D> & Layout<D>::getProcessCoord(void) const
+{
+    return procCoord_;
 }
 
 template <unsigned int D>
@@ -404,6 +452,12 @@ const unsigned int * Layout<D>::getNearNeigh(const unsigned int d) const
 }
 
 template <unsigned int D>
+const Coord<D> & Layout<D>::getFirstSite(void) const
+{
+    return firstSite_;
+}
+
+template <unsigned int D>
 const typename Layout<D>::PlaneInfo &
 Layout<D>::getPlaneInfo(const unsigned int d) const
 {
@@ -465,8 +519,23 @@ int Layout<D>::neighborCoord(const unsigned int d) const
 
     checkDir(d);
     
-    return (d < D) ? ((coord_[ad] + 1)          % p_[ad])
-                   : ((coord_[ad] + p_[ad] - 1) % p_[ad]);
+    return (d < D) ? ((procCoord_[ad] + 1)          % p_[ad])
+                   : ((procCoord_[ad] + p_[ad] - 1) % p_[ad]);
+}
+
+// test if site is local ///////////////////////////////////////////////////////
+template <unsigned int D>
+bool Layout<D>::isLocal(const Coord<D> &x)
+{
+    bool res = true;
+
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        res = res && (x[d] >= firstSite_[d]);
+        res = res && (x[d] <  firstSite_()[d] + locDim_(d));
+    }
+
+    return res;
 }
 
 // get coordinates /////////////////////////////////////////////////////////////
@@ -488,10 +557,16 @@ Coord<D> Layout<D>::getCoord(const unsigned int i) const
     x = getLocalCoord(i);
     for (unsigned int d = 0; d < D; ++d)
     {
-        x[d] += getLocalDim(d)*static_cast<unsigned int>(coord_[d]);
+        x[d] += getFirstSite()[d];
     }
 
     return x;
+}
+
+template <unsigned int D>
+unsigned int Layout<D>::getIndex(const Coord<D> &x) const
+{
+    return coordToRowMajor(x, locDim_);
 }
 
 // need communication in direction d? //////////////////////////////////////////

@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     time = layout.time() - time;
     sleep(sleepTime);
     nOp = n*funcFlop*static_cast<float>(layout.getVolume());
-    if (layout.getRank() == 0)
+    if (layout.getMyRank() == 0)
     {
         cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
     }
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     }
     time = layout.time() - time;
     sleep(sleepTime);
-    if (layout.getRank() == 0)
+    if (layout.getMyRank() == 0)
     {
         cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
     }
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     }
     time = layout.time() - time;
     sleep(sleepTime);
-    if (layout.getRank() == 0)
+    if (layout.getMyRank() == 0)
     {
         cout << time << " s, " << nOp << " flop, " << nOp/time << " flop/s" << endl;
     }

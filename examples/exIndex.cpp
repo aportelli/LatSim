@@ -24,7 +24,7 @@ int main(void)
     // Dump nearest neighbour table
     Coord<4> ld = layout.getLocalDim();
 
-    if (layout.getRank() == 0)
+    if (layout.getMyRank() == 0)
     {
         cout << "-- NEAREST NEIGHBOUR TABLE" << endl;
         for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)
@@ -56,7 +56,7 @@ int main(void)
     for (unsigned int d = 0; d < 8; ++d)
     {
         lat.gather(d);
-        if (layout.getRank() == 0)
+        if (layout.getMyRank() == 0)
         {
             cout << "-- NEIGHBOUR IN DIRECTION " << d << endl;
             for (unsigned int i = 0; i < layout.getLocalVolume(); ++i)

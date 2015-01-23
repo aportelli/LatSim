@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
             }
             MPI_Reduce(&locSum, &phiAv, 1, MPI_DOUBLE, MPI_SUM, 0,
                        layout.getCommGrid());
-            if (layout.getRank() == 0)
+            if (layout.getMyRank() == 0)
             {
                 cout << "<phi>= " << phiAv/static_cast<double>(layout.getVolume());
                 cout << endl;

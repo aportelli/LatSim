@@ -49,6 +49,8 @@ public:
     inline const T & operator()(const unsigned int i,
                                 const unsigned int d) const;
     inline T &       operator()(const unsigned int i, const unsigned int d);
+    // global site access
+    T getSite(const Coord<D> &x);
     // filling function
     void fill(const T &x);
     // layout access
@@ -73,7 +75,8 @@ public:
     T reduce(const T &x, std::function<T(const Vec<T> &buf)> &f);
     T reduceSum(const T &x);
     // lattice integration
-    double sum(void);
+    T      sum(void);
+    Vec<T> sumSlice(const unsigned d);
 private:
     // helpers for constructors/destructor
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -88,7 +91,7 @@ private:
     std::array<T *, 2*D>         commBuffer_;
     Vec<T>                       reduceBuffer_;
     bool                         mpiTypesInit_;
-    MPI_Datatype                 mpiElemType_;
+    MPI_Datatype                 mpiSiteType_;
     std::array<MPI_Datatype, D>  mpiBufType_, mpiPlaneType_;
     std::array<MPI_Request, 2*D> sReq_, rReq_;
     std::array<MPI_Status, 2*D>  sStatus_, rStatus_;
@@ -115,6 +118,12 @@ DEFINE_OP(operator/, Div)
 // useful loop macro
 #define FOR_SITE(l, i)\
 for (unsigned int i = 0; i < (l).getLayout().getLocalVolume(); ++i)
+
+#define PINFO(l,d) (l).getLayout().getPlaneInfo(d)
+#define FOR_SITE_IN_PLANE(l, d, x, i)\
+for (unsigned int _b = 0; _b < PINFO(l,d).nBlocks; ++_b)\
+for (unsigned int i = (x)*PINFO(l,d).blockSize + PINFO(l,d).stride*_b;\
+     i < (x+1)*PINFO(l,d).blockSize + PINFO(l,d).stride*_b; ++i)
 
 /******************************************************************************
  *                          Lattice implementation                            *
@@ -157,7 +166,7 @@ void Lattice<T, D>::clear(void)
             MPI_Type_free(&mpiBufType_[d]);
             MPI_Type_free(&mpiPlaneType_[d]);
         }
-        MPI_Type_free(&mpiElemType_);
+        MPI_Type_free(&mpiSiteType_);
     }
     mpiTypesInit_ = false;
 }
@@ -187,8 +196,9 @@ void Lattice<T, D>::swap(Lattice<T, D> &l)
     swap(data_, l.data_);
     swap(lattice_, l.lattice_);
     swap(commBuffer_, l.commBuffer_);
+    reduceBuffer_.swap(l.reduceBuffer_);
     swap(mpiTypesInit_, l.mpiTypesInit_);
-    swap(mpiElemType_, l.mpiElemType_);
+    swap(mpiSiteType_, l.mpiSiteType_);
     swap(mpiBufType_, l.mpiBufType_);
     swap(mpiPlaneType_, l.mpiPlaneType_);
     swap(sReq_, l.sReq_);
@@ -201,8 +211,8 @@ template <typename T, unsigned int D>
 void Lattice<T, D>::createMpiTypes(void)
 {
     // create base MPI data type
-    MpiType<T>::make(mpiElemType_);
-    MPI_Type_commit(&mpiElemType_);
+    MpiType<T>::make(mpiSiteType_);
+    MPI_Type_commit(&mpiSiteType_);
 
     // creat MPI types for planes and communication buffers
     for (unsigned int d = 0; d < D; ++d)
@@ -213,9 +223,9 @@ void Lattice<T, D>::createMpiTypes(void)
         const int  size       = static_cast<int>(p.blockSize);
         const int  stride     = static_cast<int>(p.stride);
 
-        MPI_Type_contiguous(locSurface, mpiElemType_, &mpiBufType_[d]);
+        MPI_Type_contiguous(locSurface, mpiSiteType_, &mpiBufType_[d]);
         MPI_Type_commit(&mpiBufType_[d]);
-        MPI_Type_vector(n, size, stride, mpiElemType_, &mpiPlaneType_[d]);
+        MPI_Type_vector(n, size, stride, mpiSiteType_, &mpiPlaneType_[d]);
         MPI_Type_commit(&mpiPlaneType_[d]);
     }
     mpiTypesInit_ = true;
@@ -256,6 +266,28 @@ template <typename T, unsigned int D>
 Lattice<T, D>::~Lattice(void)
 {
     clear();
+}
+
+// global site access //////////////////////////////////////////////////////////
+template <typename T, unsigned int D>
+T Lattice<T, D>::getSite(const Coord<D> &x)
+{
+    unsigned int siteRank = layout_->getSiteRank(x);
+    T            site;
+
+    if (layout_->getMyRank() == siteRank)
+    {
+        Coord<D> locX;
+
+        for (unsigned int d = 0; d < D; ++d)
+        {
+            locX[d] = x[d] - layout_->getFirstSite()[d];
+        }
+        site = (*this)(layout_->getIndex(locX));
+    }
+    MPI_Bcast(&site, 1, mpiSiteType_, siteRank, layout_->getCommGrid());
+
+    return site;
 }
 
 // local site access ///////////////////////////////////////////////////////////
@@ -396,7 +428,7 @@ void Lattice<T, D>::dump(void)
 template <typename T, unsigned int D>
 T Lattice<T, D>::reduce(const T &x, std::function<T(const Vec<T> &buf)> &f)
 {
-    MPI_Allgather(&x, 1, mpiElemType_, reduceBuffer_.data(), 1, mpiElemType_,
+    MPI_Allgather(&x, 1, mpiSiteType_, reduceBuffer_.data(), 1, mpiSiteType_,
                   layout_->getCommGrid());
 
     return f(reduceBuffer_);
@@ -414,7 +446,7 @@ T Lattice<T, D>::reduceSum(const T &x)
 
 // lattice integration /////////////////////////////////////////////////////////
 template <typename T, unsigned int D>
-double Lattice<T, D>::sum(void)
+T Lattice<T, D>::sum(void)
 {
     T localSum;
 
@@ -425,6 +457,31 @@ double Lattice<T, D>::sum(void)
     }
 
     return reduceSum(localSum);
+}
+
+template <typename T, unsigned int D>
+Vec<T> Lattice<T, D>::sumSlice(const unsigned d)
+{
+    Vec<T>       localSum(layout_->getLocalDim(d)), sum(layout_->getDim(d));
+    T            buf, zero = (*this)(0) - (*this)(0);
+    unsigned int xi = layout_->getFirstSite()[d];
+    unsigned int xf = xi + layout_->getLocalDim(d);
+
+    localSum.fill(zero);
+    for (unsigned int x = 0; x < layout_->getLocalDim(d); ++x)
+    {
+        FOR_SITE_IN_PLANE(*this, d, x, i)
+        {
+            localSum(x) += (*this)(i);
+        }
+    }
+    for (unsigned int x = 0; x < layout_->getDim(d); ++x)
+    {
+        buf    = ((x >= xi)&&(x < xf)) ? localSum(x - xi) : zero;
+        sum(x) = reduceSum(buf);
+    }
+
+    return sum;
 }
 
 END_NAMESPACE
