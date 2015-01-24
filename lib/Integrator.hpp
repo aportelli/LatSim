@@ -23,7 +23,7 @@
 #include <LatSim/Global.hpp>
 #include <functional>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                               Integrator                                   *
@@ -72,6 +72,6 @@ void Integrator<Fs...>::moveMoms(Fs &... fields, const double step) const
     moveMoms_(fields..., step);
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Integrator_hpp_

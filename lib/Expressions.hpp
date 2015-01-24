@@ -26,7 +26,7 @@
 #define BEGIN_EXPR_NAMESPACE namespace Expr {
 #define END_EXPR_NAMESPACE   }
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 template <typename Op, typename... Ts>
 class LatExpr: public std::tuple<Op, Ts...>, public LatticeObj
@@ -124,6 +124,6 @@ public:
 };
 
 END_EXPR_NAMESPACE
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Expressions_hpp_

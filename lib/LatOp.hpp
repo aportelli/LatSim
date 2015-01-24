@@ -25,7 +25,7 @@
 #include <LatSim/Lattice.hpp>
 #include <utility>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 // forward finite difference ///////////////////////////////////////////////////
 template <typename Lat>
@@ -96,6 +96,6 @@ LatOpExpr<Laplacian<T, D>, Lattice<T, D>> laplacian(Lattice<T, D> &l)
     return LatOpExpr<Laplacian<T, D>, Lattice<T, D>>(Laplacian<T, D>(), l);
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_LatOp_hpp_

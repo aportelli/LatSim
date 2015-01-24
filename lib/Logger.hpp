@@ -22,7 +22,7 @@
 
 #include <LatSim/Global.hpp>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                                  Logger                                    *
@@ -49,6 +49,6 @@ private:
     std::string name_;
 };
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Logger_hpp_

@@ -26,7 +26,7 @@
 #include <LatSim/Logger.hpp>
 #include <LatSim/MpiTypes.hpp>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                                Lattice                                     *
@@ -484,6 +484,6 @@ Vec<T> Lattice<T, D>::sumSlice(const unsigned d)
     return sum;
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Lattice_hpp_

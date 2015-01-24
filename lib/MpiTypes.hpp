@@ -22,7 +22,7 @@
 
 #include <LatSim/Global.hpp>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 // MPI type constructor is embeded inside a class to allow partial template
 // specialization
@@ -93,6 +93,6 @@ public:
     }
 };
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_MpiTypes_hpp_

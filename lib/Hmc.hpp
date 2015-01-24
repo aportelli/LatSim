@@ -26,7 +26,7 @@
 #include <random>
 #include <utility>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                                  Hmc                                       *
@@ -46,6 +46,8 @@ public:
         const unsigned int trajPretherm = 50, const double trajLength = 1.);
     // destructor
     virtual ~Hmc(void) = default;
+    // access
+    int getTraj(void);
     // HMC step
     bool update(Fs &... fields);
     // HMC statistics
@@ -91,6 +93,13 @@ Hmc<Fs...>::Hmc(const Functional &hamiltonian, const MomGenFunc &momGen,
     masterLog("trajectory length= " + strFrom(trajLength_));
     masterLog("trajectory  nStep= " + strFrom(trajNStep_));
     masterLog("trajectory   step= " + strFrom(trajStep_));
+}
+
+// access //////////////////////////////////////////////////////////////////////
+template <typename... Fs>
+int Hmc<Fs...>::getTraj(void)
+{
+    return trajCount_ - 1;
 }
 
 // HMC step ////////////////////////////////////////////////////////////////////
@@ -195,6 +204,6 @@ bool Hmc<Fs...>::accept(const double dH)
     }
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Hmc_hpp_

@@ -28,7 +28,7 @@
 #define RNGTYPE std::mt19937
 #endif
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                                 Layout                                     *
@@ -604,6 +604,6 @@ void Layout<D>::initializeRng(void)
     }
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Layout_hpp_

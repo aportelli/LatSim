@@ -23,7 +23,7 @@
 #include <LatSim/Global.hpp>
 #include <LatSim/Integrator.hpp>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                           VerletIntegrator                                 *
@@ -64,6 +64,6 @@ void VerletIntegrator<Fs...>::evolve(Fs &... fields, const double step,
     }
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_VerletIntegrator_hpp_

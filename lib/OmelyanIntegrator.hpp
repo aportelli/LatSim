@@ -23,7 +23,7 @@
 #include <LatSim/Global.hpp>
 #include <LatSim/Integrator.hpp>
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                           OmelyanIntegrator                                *
@@ -68,6 +68,6 @@ void OmelyanIntegrator<Fs...>::evolve(Fs &... fields, const double step,
     }
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_OmelyanIntegrator_hpp_

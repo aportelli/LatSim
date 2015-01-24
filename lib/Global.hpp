@@ -56,8 +56,8 @@
 #define flatten
 #endif
 
-#define BEGIN_NAMESPACE namespace LatSim {
-#define END_NAMESPACE }
+#define BEGIN_LATSIM_NAMESPACE namespace LatSim {
+#define END_LATSIM_NAMESPACE }
 
 // macro utilities
 #define unique_arg(...) __VA_ARGS__
@@ -81,7 +81,7 @@ Class & operator=(const ExprType<Derived> &m)\
     return *this;\
 }
 
-BEGIN_NAMESPACE
+BEGIN_LATSIM_NAMESPACE
 
 // lattice coordinate type /////////////////////////////////////////////////////
 template <unsigned int D>
@@ -144,9 +144,6 @@ typedef SUVec<dynamic> UVec;
 typedef SDVec<dynamic> DVec;
 typedef SCVec<dynamic> CVec;
 
-#define FOR_VEC(vec, i)  for (LatSim::Index i = 0; i < (vec).size(); ++i)
-#define FOR_ARRAY(ar, i) FOR_VEC(ar, i)
-
 // block types
 template <typename Derived>
 using Block      = Eigen::Block<Derived>;
@@ -173,9 +170,9 @@ using ConstMap = Eigen::Map<const Derived>;
 typedef Mat<double>::Index MatIndex;
 
 // Error handling //////////////////////////////////////////////////////////////
-#define SRC_LOC LatSim::strFrom(__FUNCTION__) + " at " +\
+#define LATSIM_SRC_LOC LatSim::strFrom(__FUNCTION__) + " at " +\
                 LatSim::strFrom(__FILE__) + ":" + LatSim::strFrom(__LINE__)
-#define locGlobalError(msg) LatSim::globalError(msg, SRC_LOC)
+#define locGlobalError(msg) LatSim::globalError(msg, LATSIM_SRC_LOC)
 
 void globalError(const std::string msg, const std::string loc = "");
 
@@ -329,6 +326,6 @@ inline UVec strTo<UVec>(const std::string &str)
     return res;
 }
 
-END_NAMESPACE
+END_LATSIM_NAMESPACE
 
 #endif // LatSim_Global_hpp_
