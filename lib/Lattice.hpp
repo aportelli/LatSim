@@ -146,7 +146,7 @@ void Lattice<T, D>::reallocate(const LayoutObject *layout)
     {
         commBuffer_[d] = commBuffer_[d-1] + layout_->getLocalSurface(d);
     }
-    reduceBuffer_.resize(static_cast<MatIndex>(layout_->getNProcess()));
+    reduceBuffer_.resize(static_cast<Index>(layout_->getNProcess()));
 }
 
 template <typename T, unsigned int D>

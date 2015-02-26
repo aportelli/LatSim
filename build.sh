@@ -10,11 +10,6 @@ case $1 in
         make -j8
         echo '-- installing...'
         make install 1>/dev/null;;
-#        if [[ `basename \`pwd\`` == "lib" ]]
-#        then
-#            echo '-- creating debug symbols...'
-#            dsymutil .libs/libLatSim.0.dylib -o ${PREFIX}/lib/libLatSim.0.dylib.dSYM
-#        fi;;
     'clean')
         echo '-- cleaning...'
         make -j8 clean;;

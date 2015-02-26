@@ -64,15 +64,15 @@ int main(void)
                 x  = rowMajorToCoord(i, ld);
                 xn = rowMajorToCoord(lat(i, d), ld);
                 cout << "lat([";
-                for (unsigned int d = 0; d < 4; ++d)
+                for (unsigned int k = 0; k < 4; ++k)
                 {
-                    cout << x[d] << ((d == 3) ? "" : ", ");
+                    cout << x[k] << ((k == 3) ? "" : ", ");
                 }
                 cout << "](" << i << "), " << d << ")= ";
                 cout << "[";
-                for (unsigned int d = 0; d < 4; ++d)
+                for (unsigned int k = 0; k < 4; ++k)
                 {
-                    cout << xn[d] << ((d == 3) ? "" : ", ");
+                    cout << xn[k] << ((k == 3) ? "" : ", ");
                 }
                 cout << "](" << lat(i, d) << ")" << endl;
             }

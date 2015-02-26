@@ -18,30 +18,23 @@ noinst_PROGRAMS =           \
 
 exIndex_SOURCES  = exIndex.cpp
 exIndex_CXXFLAGS = $(COM_CXXFLAGS)
-exIndex_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exMatCommBench_SOURCES  = exMatCommBench.cpp
 exMatCommBench_CXXFLAGS = $(COM_CXXFLAGS)
-exMatCommBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exMatLibBench_SOURCES  = exMatLibBench.cpp
 exMatLibBench_CXXFLAGS = $(COM_CXXFLAGS)
-exMatLibBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exMatOpBench_SOURCES  = exMatOpBench.cpp
 exMatOpBench_CXXFLAGS = $(COM_CXXFLAGS)
-exMatOpBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exScalarSim_SOURCES  = exScalarSim.cpp
 exScalarSim_CXXFLAGS = $(COM_CXXFLAGS)
-exScalarSim_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exScalCommBench_SOURCES  = exScalCommBench.cpp
 exScalCommBench_CXXFLAGS = $(COM_CXXFLAGS)
-exScalCommBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 exScalOpBench_SOURCES  = exScalOpBench.cpp
 exScalOpBench_CXXFLAGS = $(COM_CXXFLAGS)
-exScalOpBench_LDFLAGS  = -L../lib/.libs -lLatSim
 
 ACLOCAL_AMFLAGS = -I .buildutils/m4

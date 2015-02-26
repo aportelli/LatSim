@@ -7,7 +7,7 @@ AC_CONFIG_AUX_DIR([.buildutils])
 AC_CONFIG_SRCDIR([lib/Global.cpp])
 AC_CONFIG_SRCDIR([examples/exScalOpBench.cpp])
 AC_CONFIG_MACRO_DIR([.buildutils/m4])
-AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_SILENT_RULES([yes])
 AC_CONFIG_HEADERS([config.h])
 
@@ -18,12 +18,15 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_MAKE_SET
-AC_PROG_LEX
-AC_PROG_YACC
-m4_ifdef([AM_PROG_AR],[AM_PROG_AR])
 
-LT_INIT
+# Options
+AC_ARG_WITH([LatCore],
+    [AS_HELP_STRING([--with-LatCore=prefix],
+    [use this option for a non-standard install prefix of the LatCore library])],
+    [AM_CXXFLAGS="$AM_CXXFLAGS -I$with_LatCore/include"]
+    [AM_LDFLAGS="$AM_LDFLAGS -L$with_LatCore/lib"],
+    []
+)
 
 # Get compilers informations
 AX_COMPILER_VENDOR
@@ -52,6 +55,8 @@ LIBS="$LIBS $MPI_CXXLDFLAGS"
 
 # Checks for libraries.
 AC_CHECK_LIB([m],[cos],[],[AC_MSG_ERROR([libm library not found])])
+AC_CHECK_LIB([LatCore],[_ZN7LatCore12testFunctionEv],[],
+             [AC_MSG_ERROR([LatCore library not found])])
 
 # Checks for header files.
 AC_HEADER_STDC

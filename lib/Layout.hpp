@@ -22,6 +22,7 @@
 
 #include <LatSim/Global.hpp>
 #include <LatSim/Logger.hpp>
+#include <array>
 #include <random>
 
 #ifndef RNGTYPE
@@ -117,7 +118,7 @@ private:
 };
 
 // global layout
-extern LayoutObject *globalLayout;
+LayoutObject *globalLayout = nullptr;
 
 template <unsigned int D>
 void registerGlobalLayout(Layout<D> &layout)

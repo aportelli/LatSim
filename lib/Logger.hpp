@@ -21,13 +21,13 @@
 #define LatSim_Logger_hpp_
 
 #include <LatSim/Global.hpp>
+#include <iomanip>
 
 BEGIN_LATSIM_NAMESPACE
 
 /******************************************************************************
  *                                  Logger                                    *
  ******************************************************************************/
-
 class Logger
 {
 public:
@@ -48,6 +48,71 @@ private:
 private:
     std::string name_;
 };
+
+/******************************************************************************
+ *                           Logger implementation                            *
+ ******************************************************************************/
+// constructor /////////////////////////////////////////////////////////////////
+Logger::Logger(const std::string name)
+: name_(name)
+{}
+
+// IO //////////////////////////////////////////////////////////////////////////
+void Logger::masterLog(const std::string &msg) const
+{
+    int rank;
+
+    checkMpi();
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0)
+    {
+        std::cout << std::left << std::setw(width) << "[" + name_ + "]";
+        std::cout << ": " << msg << std::endl;
+    }
+}
+
+void Logger::masterLog(const std::string &&msg) const
+{
+    masterLog(msg);
+}
+
+void Logger::nodeLog(const std::string &msg) const
+{
+    int rank, size;
+
+    checkMpi();
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    for (int r = 0; r < size; ++r)
+    {
+        if (r == rank)
+        {
+            std::cout << std::left << std::setw(width);
+            std::cout << "{" + name_ + "(" + strFrom(rank) + ")}" << ": ";
+            std::cout << msg << std::endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+}
+
+void Logger::nodeLog(const std::string &&msg) const
+{
+    nodeLog(msg);
+}
+
+// check ///////////////////////////////////////////////////////////////////////
+void Logger::checkMpi(void) const
+{
+    int isInit;
+
+    MPI_Initialized(&isInit);
+    if (!isInit)
+    {
+        MPI_Barrier(MPI_COMM_WORLD);
+        locGlobalError("communications not initialized, please declare"
+                       " a Layout object");
+    }
+}
 
 END_LATSIM_NAMESPACE
 
