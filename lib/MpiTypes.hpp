@@ -71,6 +71,17 @@ public:
     }
 };
 
+// double complex
+template <>
+class MpiType<std::complex<double>>
+{
+public:
+    static void make(MPI_Datatype &type)
+    {
+        MPI_Type_contiguous(2, MPI_DOUBLE, &type);
+    }
+};
+
 // matrix of float
 template <int nRow, int nCol>
 class MpiType<SFMat<nRow, nCol>>
