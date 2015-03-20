@@ -117,7 +117,6 @@ bool Hmc<Fs...>::update(Fs &... fields)
 
     // compute initial energy
     localDH = hamiltonian_(fields...);
-    MPI_Allreduce(&localDH, &dH, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     // evolve
     integrator_.evolve(fields..., trajStep_, trajNStep_);

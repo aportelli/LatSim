@@ -76,7 +76,7 @@ public:
     T reduceSum(const T &x);
     // lattice integration
     T      sum(void);
-    Vec<T> sumSlice(const unsigned d);
+    Vec<T> sumSlice(const unsigned int d);
 private:
     // helpers for constructors/destructor
     void reallocate(const LayoutObject *layout = globalLayout);
@@ -144,7 +144,7 @@ void Lattice<T, D>::reallocate(const LayoutObject *layout)
     commBuffer_[0] = lattice_ + layout_->getLocalVolume();
     for (unsigned int d = 1; d < 2*D; ++d)
     {
-        commBuffer_[d] = commBuffer_[d-1] + layout_->getLocalSurface(d);
+        commBuffer_[d] = commBuffer_[d-1] + layout_->getLocalSurface(d-1);
     }
     reduceBuffer_.resize(static_cast<Index>(layout_->getNProcess()));
 }
@@ -214,7 +214,7 @@ void Lattice<T, D>::createMpiTypes(void)
     MpiType<T>::make(mpiSiteType_);
     MPI_Type_commit(&mpiSiteType_);
 
-    // creat MPI types for planes and communication buffers
+    // create MPI types for planes and communication buffers
     for (unsigned int d = 0; d < D; ++d)
     {
         const auto &p         = layout_->getPlaneInfo(d);
@@ -337,21 +337,18 @@ const Layout<D> & Lattice<T, D>::getLayout(void)
 template <typename T, unsigned int D>
 void Lattice<T, D>::gatherStart(const unsigned int d)
 {
-    if (layout_->needComm(d))
-    {
-        const unsigned int pShift  = (layout_->getLocalDim(d) - 1)
-                                     *layout_->getPlaneInfo(d).blockSize;
-        const int sd               = static_cast<int>(d);
-        const unsigned int ad      = layout_->absDir(d);
-        T                  *sendPt = lattice_ + ((d < D) ? 0 : pShift);
+    const unsigned int pShift  = (layout_->getLocalDim(d) - 1)
+                                 *layout_->getPlaneInfo(d).blockSize;
+    const int sd               = static_cast<int>(d);
+    const unsigned int ad      = layout_->absDir(d);
+    T                  *sendPt = lattice_ + ((d < D) ? 0 : pShift);
 
-        MPI_Isend(sendPt, 1, mpiPlaneType_[ad],
-                  layout_->neighborCoord(layout_->oppDir(d)), sd,
-                  layout_->getDirCommGrid(d), &sReq_[d]);
-        MPI_Irecv(commBuffer_[d], 1, mpiBufType_[ad],
-                  layout_->neighborCoord(d), sd, layout_->getDirCommGrid(d),
-                  &rReq_[d]);
-    }
+    MPI_Isend(sendPt, 1, mpiPlaneType_[ad],
+              layout_->neighborCoord(layout_->oppDir(d)), sd,
+              layout_->getDirCommGrid(d), &sReq_[d]);
+    MPI_Irecv(commBuffer_[d], 1, mpiBufType_[ad],
+              layout_->neighborCoord(d), sd, layout_->getDirCommGrid(d),
+              &rReq_[d]);
 }
 
 template <typename T, unsigned int D>
@@ -413,14 +410,14 @@ void Lattice<T, D>::dump(void)
 
     for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
     {
-        x   = rowMajorToCoord(i, layout_->getLocalDim());
+        x   = layout_->getCoord(i);
         buf = "[";
         for (unsigned int d = 0; d < D; ++d)
         {
             buf += strFrom(x[d]) + ((d == D - 1) ? "" : ", ");
         }
         buf += "](" + strFrom(i) + ")= " + strFrom((*this)(i));
-        masterLog(buf);
+        nodeLog(buf);
     }
 }
 

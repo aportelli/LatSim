@@ -96,6 +96,8 @@ public:
     unsigned int getIndex(const Coord<D> &x) const;
     // need communication in direction d?
     bool needComm(const unsigned d) const;
+    // has boundary in direction d?
+    bool isBoundary(const unsigned d) const;
     // clock
     static double time(void);
     // random generator management
@@ -107,6 +109,7 @@ private:
     unsigned int                                     commBufferSize_;
     std::array<int, D>                               p_, procCoord_;
     std::array<bool, D>                              needComm_;
+    std::array<bool, 2*D>                            isBoundary_;
     Coord<D>                                         locSurface_, dim_, locDim_;
     Coord<D>                                         firstSite_;
     MPI_Comm                                         commGrid_;
@@ -244,6 +247,16 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
         firstSite_[d] = static_cast<unsigned int>(procCoord_[d])*locDim_[d];
     }
 
+    // check boundaries
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        isBoundary_[d] = (procCoord_[d] == p_[d] - 1);
+    }
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        isBoundary_[d + D] = (procCoord_[d] == 0);
+    }
+
     // compute plane communication informations
     planeInfo_[0].nBlocks   = 1;
     planeInfo_[0].blockSize = 1;
@@ -284,13 +297,13 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
         {
             x = rowMajorToCoord(i, locDim_);
             // positive direction, local or no communications
-            if ((ad == d)&&((x[ad] != locDim_[ad] - 1)||!needComm_[ad]))
+            if ((ad == d)&&(x[ad] != locDim_[ad] - 1))
             {
                 x[ad]          = (x[ad] + 1 + locDim_[ad]) % locDim_[ad];
                 nnTable_[d][i] = coordToRowMajor(x, locDim_);
             }
             // negative direction, local or no communications
-            else if ((ad != d)&&((x[ad] != 0)||!needComm_[ad]))
+            else if ((ad != d)&&(x[ad] != 0))
             {
                 x[ad]          = (x[ad] - 1 + locDim_[ad]) % locDim_[ad];
                 nnTable_[d][i] = coordToRowMajor(x, locDim_);
@@ -321,6 +334,15 @@ Layout<D>::Layout(const Coord<D> &dim, const Coord<D> &p)
     for (unsigned int d = 0; d < D; ++d)
     {
         buf += strFrom(procCoord_[d]) + ((d == D-1) ? "]" : ", ");
+    }
+    buf += " (on boundary: ";
+    for (unsigned int d = 0; d < D; ++d)
+    {
+        buf += strFrom(isBoundary_[d]) + ((d == D-1) ? "; " : ", ");
+    }
+    for (unsigned int d = D; d < 2*D; ++d)
+    {
+        buf += strFrom(isBoundary_[d]) + ((d == 2*D-1) ? ")" : ", ");
     }
     nodeLog("MPI grid position: " + buf);
 
@@ -575,6 +597,13 @@ template <unsigned int D>
 bool Layout<D>::needComm(const unsigned d) const
 {
     return needComm_[absDir(d)];
+}
+
+// has boundary in direction d? ////////////////////////////////////////////////
+template <unsigned int D>
+bool Layout<D>::isBoundary(const unsigned d) const
+{
+    return isBoundary_[d];
 }
 
 // clock ///////////////////////////////////////////////////////////////////////
