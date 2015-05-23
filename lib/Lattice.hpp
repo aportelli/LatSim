@@ -65,10 +65,10 @@ public:
     Lattice<T, D> & operator=(const Lattice<T, D> &l);
     // expression evaluation
     template <typename Op, typename... Ts>
-    inline Lattice<T, D> & operator=(const LatExpr<Op, Ts...> &expr) flatten;
+    inline flatten Lattice<T, D> & operator=(const LatExpr<Op, Ts...> &expr);
     template <typename Op>
-    inline Lattice<T, D> &
-    operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) flatten;
+    inline flatten Lattice<T, D> &
+    operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) ;
     // dump to stdout
     void dump(void);
     // reduction
@@ -380,8 +380,8 @@ Lattice<T, D> & Lattice<T, D>::operator=(const Lattice<T, D> &l)
 // expression evaluation ///////////////////////////////////////////////////////
 template <typename T, unsigned int D>
 template <typename Op, typename... Ts>
-inline Lattice<T, D> &
-Lattice<T, D>::operator=(const LatExpr<Op, Ts...> &expr) flatten
+inline flatten Lattice<T, D> &
+Lattice<T, D>::operator=(const LatExpr<Op, Ts...> &expr)
 {
     for (unsigned int i = 0; i < layout_->getLocalVolume(); ++i)
     {
@@ -393,8 +393,8 @@ Lattice<T, D>::operator=(const LatExpr<Op, Ts...> &expr) flatten
 
 template <typename T, unsigned int D>
 template <typename Op>
-inline Lattice<T, D> &
-Lattice<T, D>::operator=(const LatOpExpr<Op, Lattice<T, D>> &expr) flatten
+inline flatten Lattice<T, D> &
+Lattice<T, D>::operator=(const LatOpExpr<Op, Lattice<T, D>> &expr)
 {
     expr.first.eval(*this, expr.second);
 
