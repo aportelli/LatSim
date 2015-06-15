@@ -425,7 +425,8 @@ void Lattice<T, D>::dump(void)
 template <typename T, unsigned int D>
 T Lattice<T, D>::reduce(const T &x, std::function<T(const Vec<T> &buf)> &f)
 {
-    MPI_Allgather(&x, 1, mpiSiteType_, reduceBuffer_.data(), 1, mpiSiteType_,
+    MPI_Allgather(const_cast<T *>(&x), 1, mpiSiteType_,
+                  reduceBuffer_.data(), 1, mpiSiteType_,
                   layout_->getCommGrid());
 
     return f(reduceBuffer_);
