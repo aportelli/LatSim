@@ -354,11 +354,8 @@ void Lattice<T, D>::gatherStart(const unsigned int d)
 template <typename T, unsigned int D>
 void Lattice<T, D>::gatherWait(const unsigned int d)
 {
-    if (layout_->needComm(d))
-    {
-        MPI_Wait(&sReq_[d], &sStatus_[d]);
-        MPI_Wait(&rReq_[d], &rStatus_[d]);
-    }
+    MPI_Wait(&sReq_[d], &sStatus_[d]);
+    MPI_Wait(&rReq_[d], &rStatus_[d]);
 }
 
 template <typename T, unsigned int D>
