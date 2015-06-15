@@ -62,7 +62,7 @@ auto strong_inline eval(const unsigned int i, const T &arg)->decltype(arg(i))
 template <typename Op, typename... Ts, int... is>
 auto strong_inline eval(const unsigned int i,
                         const LatExpr<Op, Ts...> &expr,
-                        const ISeq<is...> &seq __unused)
+                        const ISeq<is...> &seq __dumb)
 ->decltype(std::get<0>(expr).eval(eval(i, std::get<is>(expr))...))
 {
     return std::get<0>(expr).eval(eval(i, std::get<is>(expr))...);

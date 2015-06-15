@@ -37,12 +37,12 @@ class Hmc: public Logger
 public:
     typedef std::function<double(Fs &...)> Functional;
     typedef std::function<void(Fs &...)>   MomGenFunc;
-    typedef Integrator<Fs...>              Integrator;
+    typedef Integrator<Fs...>              IntegratorType;
 
 public:
     // constructor
     Hmc(const Functional &hamiltonian, const MomGenFunc &momGen,
-        const Integrator &integrator, const unsigned trajNStep,
+        const IntegratorType &integrator, const unsigned trajNStep,
         const unsigned int trajPretherm = 50, const double trajLength = 1.);
     // destructor
     virtual ~Hmc(void) = default;
@@ -60,7 +60,7 @@ private:
 private:
     Functional                             hamiltonian_;
     MomGenFunc                             momGen_;
-    const Integrator                       &integrator_;
+    const IntegratorType                   &integrator_;
     unsigned int                           trajCount_{0}, trajNStep_;
     unsigned int                           tryCount_{0}, trajPreTherm_;
     double                                 trajStep_, trajLength_, expDH_{0.};
@@ -75,7 +75,7 @@ private:
 // constructor /////////////////////////////////////////////////////////////////
 template <typename... Fs>
 Hmc<Fs...>::Hmc(const Functional &hamiltonian, const MomGenFunc &momGen,
-                const Integrator &integrator, const unsigned trajNStep,
+                const IntegratorType &integrator, const unsigned trajNStep,
                 const unsigned int trajPretherm, const double trajLength)
 : Logger("HMC")
 , hamiltonian_(hamiltonian)

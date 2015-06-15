@@ -74,7 +74,8 @@ template <typename T, unsigned int D>
 void strong_inline Laplacian<T, D>::eval(Lattice<T, D> &res,
                                          Lattice<T, D> &arg) const
 {
-    const unsigned int localVol = arg.getLayout().getLocalVolume();
+    const     unsigned int localVol = arg.getLayout().getLocalVolume();
+    constexpr unsigned int dblD     = -2*D;
 
     for (unsigned int d = 0; d < 2*D; ++d)
     {
@@ -82,7 +83,7 @@ void strong_inline Laplacian<T, D>::eval(Lattice<T, D> &res,
     }
     for (unsigned int i = 0; i < localVol; ++i)
     {
-        res(i) = -2u*D*arg(i);
+        res(i) = -dblD*arg(i);
         for (unsigned int d = 0; d < 2*D; ++d)
         {
             res(i) += arg(i, d);

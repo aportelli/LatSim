@@ -8,8 +8,8 @@ using namespace LatSim;
 
 const unsigned int sleepTime = 1;
 
-#define func(out, x, y, z) out = x*(z*(y-x)+y*z*z*(x-y)+z+x)
-#define funcFlop 10.
+#define func(out, x, y, z) out = (x*(y+x)-y)*x
+#define funcFlop 4.
 
 int main(int argc, char *argv[])
 {

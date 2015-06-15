@@ -32,7 +32,7 @@ BEGIN_LATSIM_NAMESPACE
 BEGIN_PHI4_NAMESPACE
 
 template <unsigned int D>
-inline void momGen(Lattice<double, D> &phi __unused, Lattice<double, D> &pi)
+inline void momGen(Lattice<double, D> &phi __dumb, Lattice<double, D> &pi)
 {
     std::normal_distribution<double> d;
     const Layout<D>                  &layout = pi.getLayout();

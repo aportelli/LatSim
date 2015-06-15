@@ -32,7 +32,7 @@ template <typename T>
 class MpiType
 {
 public:
-    static void make(MPI_Datatype &type __unused)
+    static void make(MPI_Datatype &type __dumb)
     {
         locGlobalError("MPI datatype not implemented");
     }
