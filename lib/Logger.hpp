@@ -22,6 +22,7 @@
 
 #include <LatSim/Global.hpp>
 #include <iomanip>
+#include <cstdarg>
 
 BEGIN_LATSIM_NAMESPACE
 
@@ -40,6 +41,7 @@ public:
     // IO
     void masterLog(const std::string &msg) const;
     void masterLog(const std::string &&msg) const;
+    void masterLog(const char *fmt, ...) const;
     void nodeLog(const std::string &msg) const;
     void nodeLog(const std::string &&msg) const;
 private:
@@ -74,6 +76,17 @@ void Logger::masterLog(const std::string &msg) const
 void Logger::masterLog(const std::string &&msg) const
 {
     masterLog(msg);
+}
+
+void Logger::masterLog(const char *fmt, ...) const
+{
+    static char  buf[128];
+    va_list args;
+
+    va_start(args, fmt);
+    vsprintf(buf, fmt, args);
+    va_end(args);
+    masterLog(std::string(buf));
 }
 
 void Logger::nodeLog(const std::string &msg) const
