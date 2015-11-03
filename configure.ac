@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 # Initialization
-AC_PREREQ([2.64])
+AC_PREREQ([2.63])
 AC_INIT([LatSim],[0.1],[antonin.portelli@me.com],[LatSim])
 AC_CONFIG_AUX_DIR([.buildutils])
 AC_CONFIG_SRCDIR([lib/Global.cpp])
@@ -24,9 +24,7 @@ AC_ARG_WITH([LatCore],
     [AS_HELP_STRING([--with-LatCore=prefix],
     [use this option for a non-standard install prefix of the LatCore library])],
     [AM_CXXFLAGS="$AM_CXXFLAGS -I$with_LatCore/include"]
-    [AM_LDFLAGS="$AM_LDFLAGS -L$with_LatCore/lib"],
-    []
-)
+    [AM_LDFLAGS="$AM_LDFLAGS -L$with_LatCore/lib"])
 
 # Get compilers informations
 AX_COMPILER_VENDOR
