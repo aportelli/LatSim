@@ -73,10 +73,7 @@ void inline globalError(const std::string msg, const std::string loc = "")
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0)
-    {
-        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-    }
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
 }
 
 // Indexing helpers ////////////////////////////////////////////////////////////
